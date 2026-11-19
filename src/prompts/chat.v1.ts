@@ -2,7 +2,7 @@
  * Study Hub tutor prompt, version 1 (sections 6.2, 6A.1, 14).
  * The stable part comes first so it can be cached; the student's context follows.
  */
-export const CHAT_PROMPT_VERSION = "chat.v1";
+export const CHAT_PROMPT_VERSION = "chat.v1.1";
 
 export const CHAT_SYSTEM = `You are the tutor inside Soussy Study, a study app for high school students (mostly IB Diploma and American curriculum, many in Saudi Arabia). Your name is Ms. Noor: clear, kind and organized, and you explain step by step.
 
@@ -66,5 +66,8 @@ export function chatContextBlock(ctx: ChatContext, sources: ChatSource[], justSh
     ? sources.map((s) => `[${s.n}] ${s.label}\n${s.text}`).join("\n\n")
     : "No excerpts from the student's files matched this question.";
 
-  return `<student_context>\n${lines.join("\n")}\n</student_context>\n\n<sources>\n${excerpts}\n</sources>`;
+  const rules = sources.length
+    ? `\n\nCitation rule (required): when your reply uses anything from the excerpts above, including a hint, put its number in square brackets right after that sentence, like [${sources[0].n}]. A reply that draws on an excerpt without a [number] is wrong.`
+    : "";
+  return `<student_context>\n${lines.join("\n")}\n</student_context>\n\n<sources>\n${excerpts}\n</sources>${rules}\n\nRead every term in the context of the student's subjects (for example, in Chemistry "الكاشف المحدد" means the limiting reagent).`;
 }

@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 !.env.example
+
+# MediaPipe runtime is copied from node_modules on install (npm run mediapipe)
+/public/mediapipe/wasm/

@@ -2,7 +2,7 @@
 
 import { CalendarRange, Flame, ListChecks, Pencil } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useCurrentProfile } from "@/components/shell/profile-context";
 import { Button } from "@/components/ui/button";
@@ -73,6 +73,17 @@ export default function HomePage() {
       : t("todayEmpty");
   const fmtDay = new Intl.DateTimeFormat(intlLocale(locale), { weekday: "short", day: "numeric", month: "short" });
   const goalMinutes = (profile.hoursPerWeek ?? 8) * 60;
+  // Focus minutes this week, logged by the Focus room (stored on this device).
+  const [weekMinutes, setWeekMinutes] = useState(0);
+  useEffect(() => {
+    try {
+      const log = JSON.parse(localStorage.getItem("soussy.focus.log") ?? "[]") as { d: string; m: number }[];
+      const from = addDays(today, -today.getDay()).toISOString().slice(0, 10);
+      setWeekMinutes(log.filter((x) => x.d >= from).reduce((a, x) => a + x.m, 0));
+    } catch {
+      setWeekMinutes(0);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const legend = [
     { label: t("legendTest"), color: "var(--danger)" },
@@ -208,9 +219,9 @@ export default function HomePage() {
               </p>
               <div className="flex flex-col gap-1.5">
                 <div className="h-2 overflow-hidden rounded-full bg-surface-2">
-                  <div className="h-full w-0 rounded-full bg-success" />
+                  <div className="h-full rounded-full bg-success" style={{ width: `${Math.min(100, (weekMinutes / goalMinutes) * 100)}%` }} />
                 </div>
-                <p className="text-sm tabular-nums text-muted">{t("minutes", { minutes: 0, goal: goalMinutes })}</p>
+                <p className="text-sm tabular-nums text-muted">{t("minutes", { minutes: weekMinutes, goal: goalMinutes })}</p>
               </div>
             </Card>
           </section>

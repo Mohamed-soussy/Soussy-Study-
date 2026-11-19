@@ -2,19 +2,19 @@ import "server-only";
 import JSZip from "jszip";
 import mammoth from "mammoth";
 import { extractText, getDocumentProxy } from "unpdf";
-import { getAnthropic, MODELS } from "@/lib/ai/server";
+import { engineConfigured, groqText, ROUTES } from "@/lib/ai/engines";
 
 /**
  * Turns an uploaded file into page texts (section 6.1), so search and the
  * chatbot can cite "file, page N". Free extraction first; the AI only reads
- * images and scanned PDFs, and only when the key is set.
+ * photos, and only when the Groq key is set.
  */
 
 export interface Extracted {
   kind: "pdf" | "docx" | "pptx" | "text" | "image" | "audio" | "video" | "other";
   pages: string[];
   /** Why there is no text, if there isn't. */
-  note?: "needs_ai" | "transcription_later" | "unsupported" | "empty";
+  note?: "needs_ai" | "scanned_pdf" | "transcription_later" | "unsupported" | "empty";
 }
 
 const PAGE_CHARS = 2500;
@@ -47,40 +47,30 @@ function kindOf(name: string, mime: string): Extracted["kind"] {
   return "other";
 }
 
-/** Reads text from images or scanned PDFs with Claude (handles handwriting and Arabic). */
-async function aiRead(buf: Buffer, mime: string, isPdf: boolean): Promise<string[] | null> {
-  const ai = getAnthropic();
-  if (!ai) return null;
-  const data = buf.toString("base64");
-  const media = (["image/png", "image/jpeg", "image/webp", "image/gif"].includes(mime) ? mime : "image/jpeg") as
-    | "image/png"
-    | "image/jpeg"
-    | "image/webp"
-    | "image/gif";
-  const res = await ai.messages.create({
-    model: MODELS.small,
-    max_tokens: 16000,
-    messages: [
+/**
+ * Reads text from a student's photo (handwriting, Arabic, worksheets) with Groq's
+ * vision model. Personal content, so it never goes to the Gemini free tier.
+ */
+async function aiReadImage(buf: Buffer, mime: string): Promise<string[] | null> {
+  if (!engineConfigured("groq")) return null;
+  const media = ["image/png", "image/jpeg", "image/webp", "image/gif"].includes(mime) ? mime : "image/jpeg";
+  const text = await groqText(
+    ROUTES.readImage,
+    [
       {
         role: "user",
         content: [
-          isPdf
-            ? { type: "document", source: { type: "base64", media_type: "application/pdf", data } }
-            : { type: "image", source: { type: "base64", media_type: media, data } },
           {
             type: "text",
-            text: `Transcribe all text in this ${isPdf ? "document" : "image"} exactly, including handwriting and Arabic. Keep math as LaTeX. ${
-              isPdf ? "Start each page with a line '=== Page N ===' using the page number." : ""
-            } Output only the transcription.`,
+            text: "Transcribe all text in this image exactly, including handwriting and Arabic. Keep math as LaTeX. Output only the transcription.",
           },
+          { type: "image_url", image_url: { url: `data:${media};base64,${buf.toString("base64")}` } },
         ],
       },
     ],
-  });
-  const text = res.content.map((b) => (b.type === "text" ? b.text : "")).join("");
-  if (!isPdf) return [text.trim()];
-  const parts = text.split(/^=== Page \d+ ===\s*$/m).map((s) => s.trim());
-  return parts[0] === "" ? parts.slice(1) : parts;
+    4000,
+  );
+  return [text];
 }
 
 export async function extractFile(buf: Buffer, name: string, mime: string): Promise<Extracted> {
@@ -92,10 +82,9 @@ export async function extractFile(buf: Buffer, name: string, mime: string): Prom
       const pages = (text as string[]).map((t) => t.replace(/[ \t]+/g, " ").trim());
       const chars = pages.join("").length;
       if (chars < 20 * Math.max(1, pages.length)) {
-        // Probably scanned: let the AI read it if we can.
-        const ocr = await aiRead(buf, mime, true);
-        if (ocr) return { kind, pages: ocr };
-        return { kind, pages, note: "needs_ai" };
+        // Scanned pages have no text layer. Sending the whole PDF to a free cloud model
+        // would break the privacy rule, so we ask for photos of the pages instead.
+        return { kind, pages, note: "scanned_pdf" };
       }
       return { kind, pages };
     }
@@ -128,7 +117,7 @@ export async function extractFile(buf: Buffer, name: string, mime: string): Prom
     case "text":
       return { kind, pages: paginate(buf.toString("utf8")) };
     case "image": {
-      const ocr = await aiRead(buf, mime, false);
+      const ocr = await aiReadImage(buf, mime).catch(() => null);
       return ocr ? { kind, pages: ocr } : { kind, pages: [], note: "needs_ai" };
     }
     case "audio":

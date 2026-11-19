@@ -21,18 +21,53 @@ everything works, but it's saved only in that browser.
 ## Connect Supabase (real accounts)
 
 1. In Supabase, open **SQL Editor** and run each file in `supabase/migrations/` in order (`0001_…`, then `0002_…`).
-2. Copy **Project Settings → API → anon public key** into `.env.local` as `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+2. Copy **Project Settings → API → anon public key** into `.env.local` as `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   (see `.env.example` for every setting, including the AI keys).
 3. In **Authentication → URL Configuration**, add `http://localhost:3000/auth/callback`
    (and your live URL's `/auth/callback` later) to the redirect URLs.
 4. Email + password works right away. Google and Microsoft need providers turned on in
    **Authentication → Providers** with a Google Cloud OAuth client and a Microsoft Entra app.
 
-## The AI
+## The AI: three engines, one privacy rule
 
-Add `ANTHROPIC_API_KEY` to `.env.local` (and to Vercel's environment variables when you deploy).
-Models live in one place, `src/lib/ai/server.ts`: Claude Sonnet 5.5 for the tutor, Claude Haiku 5.5 for
-tagging and reading images. Prompts are versioned in `src/prompts/`. Each student gets 60 AI requests a day;
-when they run out, everything else keeps working and the count resets the next day.
+All routing lives in `src/lib/ai/engines.ts` (`ROUTES`). The rule, from section 1A of the build prompt:
+**the Gemini free tier may use what it receives to improve Google's products, so it never gets a student's
+personal data.** The code refuses to send `personal` data to Gemini even if someone changes a route by mistake.
+
+| Job | Engine | Data | Why |
+| --- | --- | --- | --- |
+| Tutor chat | Groq (GPT-OSS 120B → 20B) | personal | Fast replies; student's words and files |
+| File tagging, dates → Review tray | Groq (GPT-OSS 20B) | personal | Student's own files |
+| Reading photos / handwriting | Groq (Qwen 3.8 vision) | personal | Student's own images |
+| Whiteboard question ("interrupt and ask") | Groq | personal | Student's own question |
+| Whiteboard lessons | Gemini (3.1 Flash-Lite → 3 Flash → 3.5 Flash) | public | Syllabus topics, cached and shared; ~2.5 s per lesson |
+| Focus snapshot check | Gemini (3.1 Flash-Lite) | opt-in image | Only if the student turns on cloud checks and accepts the warning |
+| Embeddings (search by meaning) | Hugging Face (BAAI/bge-m3) | personal | Open-source; needs Inference Provider credits |
+
+Every call has a time limit and falls back to the next model when one is busy. Each student gets 60 AI requests
+a day (`DAILY_AI_LIMIT`); cached whiteboard lessons don't count. Prompts are versioned in `src/prompts/`.
+
+## AI whiteboard (section 7)
+
+`src/app/(app)/whiteboard/`, `src/components/whiteboard/player.tsx`. Gemini returns a JSON timeline: short spoken
+sentences, each with drawing actions (text, line, arrow, rect, circle, curve, highlight) on a 1000 × 625 board, tied to
+the word where they should appear. The browser's free Web Speech API reads each sentence; its word-boundary events
+reveal the drawings on a Konva canvas (with a timed fallback for voices that don't send them). Pause, jump to a step,
+change speed, captions-only mode, and **interrupt and ask**: pause, tap or circle a shape, ask about it.
+
+## Focus room (section 12A)
+
+`src/app/(app)/focus/`, `src/lib/focus/`. A focus timer plus:
+
+- **Full Focus Mode:** fullscreen, and leaving the tab pauses the timer and is counted. Browsers don't let any website
+  block other tabs; this notices and nudges instead.
+- **Camera focus mode (on-device, default):** MediaPipe face landmarks + object detection run in the browser from
+  files served by this site (`public/mediapipe`). One frame every 2.5 s is checked for presence, head turn, tiredness
+  and a phone, then dropped. Nothing is uploaded. Rules in `src/lib/focus/rules.ts` follow the build prompt exactly
+  (away 60 s, auto-pause 2 min, look-away 30 s, phone ~3 of 10 min with no progress, one check-in per 10 min,
+  sensitivity, "That was wrong").
+- **Cloud checks (opt-in, off by default):** a 256 px JPEG every 2 minutes to Gemini after a clear warning that
+  Google may use it. Rate-limited on the server (1 a minute, 300 a day).
 
 ## What's in Phase 2
 
@@ -67,8 +102,8 @@ Tools from later phases (Calendar, Study Hub, Whiteboard…) are in the menu and
 
 ## Not done yet (needs something from outside)
 
-- **AI answers** need `ANTHROPIC_API_KEY`. Without it the chat, tagging and image reading say so instead of pretending.
-- **Search by meaning** (pgvector embeddings) needs an embeddings provider key; search uses Postgres full-text search for now.
+- **Search by meaning** (pgvector + Hugging Face embeddings) is wired but the Hugging Face account has no Inference credits; search uses Postgres full-text search until then.
+- **Scanned PDFs** have no text layer; students upload photos of the pages instead (read privately by Groq).
 - **Import from OneDrive, Google Drive and Teams** arrives with the school connectors in phase 5.
 - **Audio and video transcripts** arrive in phase 5. Files upload and play now.
 - **Two-voice audio summaries** need a text-to-speech key; the script and browser read-aloud work now.

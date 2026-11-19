@@ -1,28 +1,44 @@
-import { z } from "zod";
-
-/** Auto-tagging an uploaded file (section 6.1), version 1. Runs on the small model. */
+/** Auto-tagging an uploaded file (section 6.1), version 1. Runs on Groq (personal content). */
 export const TAG_PROMPT_VERSION = "tag-file.v1";
 
-export const TagSchema = z.object({
-  subject_code: z.string().nullable().describe("One of the given subject codes, or null if none fits"),
-  unit: z.string().nullable().describe("Unit name, preferring one from the given unit list"),
-  topic: z.string().nullable().describe("Short topic name, 2–6 words"),
-  summary: z.string().describe("Exactly 2 short lines describing what the file covers"),
-  key_terms: z.array(z.string()).describe("Up to 12 key terms that appear in the file"),
-  tasks: z
-    .array(
-      z.object({
-        title: z.string().describe("Short task title, e.g. 'Physics test: Doppler effect'"),
-        type: z.enum(["test", "homework", "submission", "event"]),
-        date: z.string().describe("YYYY-MM-DD"),
-        quote: z.string().describe("The exact words in the file that mention it"),
-        confidence: z.number().describe("0 to 1"),
-      }),
-    )
-    .describe("Dated deadlines, tests or events the file mentions; empty if none"),
-});
+export interface TagResult {
+  subject_code: string | null;
+  unit: string | null;
+  topic: string | null;
+  summary: string;
+  key_terms: string[];
+  tasks: { title: string; type: "test" | "homework" | "submission" | "event"; date: string; quote: string; confidence: number }[];
+}
 
-export type TagResult = z.infer<typeof TagSchema>;
+/** Strict JSON schema (every property required; nullable fields allow null). */
+export const TAG_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["subject_code", "unit", "topic", "summary", "key_terms", "tasks"],
+  properties: {
+    subject_code: { type: ["string", "null"], description: "One of the given subject codes, or null" },
+    unit: { type: ["string", "null"], description: "Unit name, preferring one from the given list" },
+    topic: { type: ["string", "null"], description: "Short topic, 2–6 words" },
+    summary: { type: "string", description: "Exactly 2 short lines" },
+    key_terms: { type: "array", items: { type: "string" }, description: "Up to 12 key terms found in the text" },
+    tasks: {
+      type: "array",
+      description: "Dated deadlines, tests or events written in the file; empty if none",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["title", "type", "date", "quote", "confidence"],
+        properties: {
+          title: { type: "string" },
+          type: { type: "string", enum: ["test", "homework", "submission", "event"] },
+          date: { type: "string", description: "YYYY-MM-DD" },
+          quote: { type: "string", description: "Exact words from the file" },
+          confidence: { type: "number", description: "0 to 1" },
+        },
+      },
+    },
+  },
+} as const;
 
 export function tagPrompt(args: {
   fileName: string;
