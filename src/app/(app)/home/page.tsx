@@ -11,6 +11,7 @@ import { getPack } from "@/curriculum";
 import { addDays, occurrences, sameDay, startOfDay } from "@/lib/calendar/logic";
 import { eventColor, intlLocale, TYPE_STYLE } from "@/lib/calendar/style";
 import { useEvents } from "@/lib/calendar/use-events";
+import { SchoolInbox } from "@/components/school/inbox";
 import { daysUntil } from "@/lib/profile/types";
 import { cn, subjectColor } from "@/lib/utils";
 
@@ -56,7 +57,7 @@ export default function HomePage() {
   const firstName = profile.fullName?.trim().split(/\s+/)[0] ?? "";
   const greeting = t(greetingKey(new Date().getHours()), { name: firstName });
   const locale = useLocale();
-  const { events, update } = useEvents();
+  const { events, update, reload } = useEvents();
   const today = startOfDay(new Date());
   const week = useMemo(() => occurrences(events, today, addDays(today, 7)), [events]); // eslint-disable-line react-hooks/exhaustive-deps
   const plan = week.filter((o) => sameDay(o.start, today) && o.event.type !== "class");
@@ -109,6 +110,7 @@ export default function HomePage() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex min-w-0 flex-col gap-6">
+          <SchoolInbox events={events} enrollments={profile.enrollments} onChanged={reload} />
           <section aria-labelledby="plan-title" className="flex flex-col gap-3">
             <h2 id="plan-title" className="text-lg font-semibold">
               {t("planTitle")}

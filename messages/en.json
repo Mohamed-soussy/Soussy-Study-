@@ -623,7 +623,8 @@
         "anySubject": "Any subject"
       }
     },
-    "pageShort": "p. {page}"
+    "pageShort": "p. {page}",
+    "lessons": "Lessons"
   },
   "whiteboard": {
     "title": "AI Whiteboard",
@@ -1009,5 +1010,219 @@
     "pen": "Pen",
     "eraser": "Eraser",
     "placeholder": "Write anything…"
+  },
+  "lessons": {
+    "title": "Lessons",
+    "text": "Add a recorded class. Soussy Study finds every homework, test and key idea the teacher said, with a link to the exact moment.",
+    "lesson": "Lesson",
+    "yours": "Your lessons",
+    "found": "{count, plural, =0 {nothing to do found} one {# item found} other {# items found}}",
+    "failed": "Couldn't finish this lesson.",
+    "stopped": "Analysis stopped before it finished (the tab was closed). Open the lesson to try again.",
+    "notFound": "Lesson not found",
+    "notFoundText": "It may have been deleted, or it belongs to another account.",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this lesson, its transcript and the recording saved on this device? Items already on your calendar stay.",
+    "keepOpen": "Keep Soussy Study open in this tab until it's done. You'll get a notification when it's ready.",
+    "retry": "Try again",
+    "chapters": "Chapters",
+    "noMedia": "The recording is saved on the device you added it from. The transcript and everything found in it work everywhere.",
+    "noTranscript": "The transcript will appear here.",
+    "follow": "Follow along",
+    "slideAlt": "Screen at {time}",
+    "noSummary": "No summary yet.",
+    "keyPoints": "Key points",
+    "stressed": "Stressed",
+    "question": "Class question",
+    "stage": {
+      "saving": "Getting ready…",
+      "reading": "Reading the recording…",
+      "transcribing": "Transcribing… {done} of {total}",
+      "slides": "Reading the slides and whiteboard…",
+      "finding": "Finding homework and key ideas… {done} of {total}",
+      "notes": "Writing your summary…",
+      "done": "Done",
+      "error": "Something went wrong",
+      "eta": "about {minutes, plural, one {# minute} other {# minutes}} left"
+    },
+    "add": {
+      "title": "Add a lesson",
+      "upload": "Upload a recording or transcript",
+      "change": "Choose another file",
+      "record": "Record in class",
+      "recording": "Recording",
+      "stop": "Stop",
+      "micDenied": "Microphone access was blocked. Allow it in your browser settings.",
+      "formats": "Video or audio (MP4, MOV, M4A, MP3, WAV, WebM) up to 3 hours, or a Teams transcript (.vtt or .docx).",
+      "kind": {
+        "video": "video",
+        "audio": "audio",
+        "transcript": "Teams transcript",
+        "unknown": "unsupported file"
+      },
+      "subject": "Subject",
+      "noSubject": "No subject",
+      "date": "Lesson date",
+      "name": "Name",
+      "optional": "optional",
+      "namePlaceholder": "e.g. Lenz's law",
+      "readSlides": "Read the slides and whiteboard",
+      "language": "Language spoken",
+      "langAuto": "Detect",
+      "allowedTitle": "Only add lessons you're allowed to record and keep.",
+      "allowedText": "Ask your teacher first. Your lessons stay private to you and are never shared in the community vault.",
+      "pickFile": "Choose a recording or transcript first.",
+      "badType": "That file type isn't supported. Use a video, an audio file, or a Teams .vtt/.docx transcript.",
+      "tooBig": "That file is too big for the browser to read (2 GB max). Try the audio only, or the Teams transcript.",
+      "confirmAllowed": "Please confirm you're allowed to record and keep this lesson.",
+      "failed": "Couldn't save the lesson. Try again.",
+      "start": "Analyze lesson",
+      "howLong": "A 45-minute class takes about 3 minutes."
+    },
+    "empty": {
+      "title": "No lessons yet",
+      "text": "Upload a class recording or a Teams transcript, or record audio in class. Homework the teacher only said out loud will land on your calendar."
+    },
+    "items": {
+      "title": "Action items",
+      "none": "No homework, tests or deadlines were mentioned in this lesson.",
+      "dismissed": "dismissed"
+    },
+    "outputs": {
+      "title": "Make from this lesson",
+      "cards": "Flashcards",
+      "quiz": "10-question quiz",
+      "whiteboard": "Whiteboard recap",
+      "notes": "Save notes",
+      "missed": "What I missed",
+      "failed": "Couldn't make that right now. Try again in a minute.",
+      "cardsDone": "{count} flashcards added to Flashcards.",
+      "notesDone": "Notes saved to {folder}.",
+      "vault": "your files"
+    },
+    "tabs": {
+      "transcript": "Transcript",
+      "summary": "Summary",
+      "chat": "Ask",
+      "quiz": "Quiz"
+    },
+    "quiz": {
+      "taughtAt": "Taught at {time}",
+      "score": "You got {score} out of {total}."
+    },
+    "chat": {
+      "s1": "What's the homework?",
+      "s2": "What did the teacher say about the test?",
+      "s3": "Explain the hardest part again",
+      "placeholder": "Ask about this lesson",
+      "send": "Send",
+      "failed": "Couldn't answer right now."
+    }
+  },
+  "school": {
+    "origin": {
+      "heardAt": "Heard at {time}",
+      "lesson": "Lesson",
+      "teams": "Teams",
+      "outlook": "Outlook",
+      "ics": "Calendar feed",
+      "paste": "Pasted"
+    },
+    "review": {
+      "title": "Title",
+      "date": "Due date",
+      "save": "Save",
+      "merged": "On your calendar · from 2 sources",
+      "onCalendar": "On your calendar",
+      "check": "Check this",
+      "conflict": "Saved for {saved} · this source says {found}",
+      "due": "Due {date}",
+      "savedFrom": "Saved from",
+      "useNew": "Use the new date",
+      "keepSaved": "Keep the saved date",
+      "accept": "Accept",
+      "edit": "Edit",
+      "dismiss": "Dismiss"
+    },
+    "inbox": {
+      "title": "{count, plural, one {# new from school} other {# new from school}}",
+      "reviewTitle": "{count, plural, one {# item to check} other {# items to check}}",
+      "text": "Found in your lessons, Teams, calendar feeds and files. One tap puts each on your calendar.",
+      "connections": "Connections",
+      "more": "Show {count} more"
+    },
+    "conn": {
+      "title": "Connections",
+      "text": "Bring in what's happening at school. Calendar feeds, pasted text and recordings work without any school approval.",
+      "removeAsk": "Keep what this connection already imported?",
+      "keepItems": "Keep them",
+      "deleteItems": "Delete them too",
+      "cancel": "Cancel",
+      "msError": {
+        "needs_approval": "Your school needs to approve Soussy Study before students can connect. Share the \"For school IT\" page with KiS IT.",
+        "cancelled": "Microsoft sign-in was cancelled.",
+        "expired": "The sign-in took too long. Try again.",
+        "not_configured": "Microsoft sign-in isn't set up on this server yet.",
+        "failed": "Couldn't connect to Microsoft. Try again."
+      },
+      "msConnected": "Microsoft connected. Syncing now…",
+      "synced": "Synced: {created} new, {merged} merged{conflicts, plural, =0 {} one {, # date to check} other {, # dates to check}}.",
+      "failed": "Something went wrong. Try again.",
+      "lastSynced": "Last synced {when}",
+      "neverSynced": "Not synced yet",
+      "sync": "Sync",
+      "remove": "Remove",
+      "forIt": "\"For school IT\" one-pager",
+      "demoData": "Demo data",
+      "ics": {
+        "title": "Calendar feed (.ics link)",
+        "text": "Your timetable and school events, kept up to date. Works with Outlook, Google Calendar, ManageBac, Toddle and most school systems.",
+        "feed": "Calendar feed",
+        "badLink": "Paste a link that starts with https:// or webcal://",
+        "link": "Calendar link",
+        "add": "Add feed",
+        "where": "Where do I find the link?",
+        "outlook": "Outlook: Settings → Calendar → Shared calendars → Publish a calendar → copy the ICS link.",
+        "google": "Google Calendar: Settings → your calendar → Integrate calendar → Secret address in iCal format.",
+        "platforms": "ManageBac, Toddle and others: look for Calendar → Subscribe or Export, and copy the link."
+      },
+      "ms": {
+        "title": "Microsoft Teams, Outlook and OneDrive",
+        "text": "Sign in with your school account: assignments, class meetings and your files arrive automatically. Read-only.",
+        "needsAccounts": "Microsoft sign-in needs real accounts (Supabase). This copy is in demo mode.",
+        "notSetUp": "Not set up on this server yet",
+        "notSetUpText": "The app owner needs to register Soussy Study in Microsoft Entra and add: {names}.",
+        "reconnect": "Your Microsoft sign-in expired. Disconnect and connect again.",
+        "assignments": "Teams assignments",
+        "calendar": "Outlook calendar (class meetings)",
+        "files": "OneDrive files",
+        "needsApproval": "Your school hasn't approved assignment access yet",
+        "needsApprovalText": "Calendar and files still work. Give KiS IT the one-pager; once they approve, assignments appear within 30 minutes.",
+        "tryAssignments": "Try adding assignments",
+        "classes": "Classes ({count})",
+        "recentFiles": "Recent OneDrive files ({count})",
+        "open": "Open in OneDrive",
+        "save": "Save to my files",
+        "saved": "{name} saved to your files.",
+        "disconnect": "Disconnect Microsoft",
+        "connect": "Connect Microsoft",
+        "readOnly": "Soussy Study only reads. It never posts to Teams or changes anything in your school account.",
+        "preview": "See what it imports (demo data)",
+        "hidePreview": "Hide the preview"
+      },
+      "paste": {
+        "title": "Paste from school",
+        "text": "Copy a Teams post, an email or an assignment page and paste it here. The AI finds every task and date.",
+        "placeholder": "e.g. \"Physics HL: finish questions 1–3 on page 45 by Thursday. Quiz on Lenz's law next Sunday.\"",
+        "go": "Find tasks",
+        "found": "{count, plural, one {Found # item. It's waiting in New from school.} other {Found # items. They're waiting in New from school.}}",
+        "none": "No tasks or dates found in that text."
+      },
+      "lessons": {
+        "title": "Lesson recordings",
+        "text": "Upload a class recording or Teams transcript to catch homework the teacher only said out loud.",
+        "go": "Open Lessons"
+      }
+    }
   }
 }

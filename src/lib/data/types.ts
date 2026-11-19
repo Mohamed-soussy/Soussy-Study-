@@ -25,7 +25,28 @@ export interface CalendarEvent {
   repeat_every_days: number | null;
   repeat_until: string | null;
   linked_file_ids: string[];
+  /** Id in the other system (.ics UID, Teams assignment id); re-syncs update instead of copying. */
+  external_id?: string | null;
+  /** Everywhere this item was seen: a lesson moment, Teams, a calendar feed (section 10.4). */
+  origins?: Origin[];
+  /** Set on a found item whose due date differs from an item already saved. */
+  conflict_of?: string | null;
   created_at?: string;
+}
+
+export type OriginKind = "lesson" | "teams" | "outlook" | "ics" | "paste";
+
+export interface Origin {
+  kind: OriginKind;
+  /** Short label: "Physics lesson, 12 Nov", "Teams: Physics HL". */
+  label: string;
+  /** In-app or external link; lesson links jump to the exact moment (?t=seconds). */
+  href?: string;
+  /** For lessons: seconds into the recording, and the teacher's words. */
+  at?: number;
+  quote?: string;
+  /** The due date this source gave (ISO), to show "Teams says Thu, lesson says Sun". */
+  due?: string;
 }
 
 export type NewEvent = Omit<CalendarEvent, "id" | "created_at">;

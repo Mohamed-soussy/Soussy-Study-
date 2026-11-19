@@ -34,6 +34,12 @@ export const ROUTES = {
   /** Answering a question about a whiteboard drawing: personal (the student's question). */
   whiteboardAsk: { engine: "groq", data: "personal", models: ["openai/gpt-oss-120b", "openai/gpt-oss-20b"] },
   /** Whiteboard lesson on a syllabus topic: public, generated once and cached for everyone. */
+  /** Lesson recordings → text with timestamps (section 11.2). Private, so Groq (Whisper). */
+  transcribe: { engine: "groq", data: "personal", models: ["whisper-large-v3-turbo", "whisper-large-v3"] },
+  /** Finding homework, tests and key ideas in a lesson transcript, and lesson chat/quiz. */
+  lesson: { engine: "groq", data: "personal", models: ["openai/gpt-oss-120b", "openai/gpt-oss-20b"] },
+  /** Reading assignment text a student pasted from school (section 10.1, Level 1). */
+  schoolParse: { engine: "groq", data: "personal", models: ["openai/gpt-oss-20b", "openai/gpt-oss-120b"] },
   whiteboardLesson: {
     engine: "gemini",
     data: "public",
@@ -282,6 +288,54 @@ export async function* groqStream(route: { engine: "groq"; models: readonly stri
       }
     }
   }
+}
+
+/** One piece of speech with its time in the recording (seconds). */
+export interface Segment {
+  s: number;
+  e: number;
+  text: string;
+}
+
+/**
+ * Speech to text with Groq Whisper (verbose JSON gives a start and end time per segment).
+ * `prompt` is a short hint of names and subject words; it improves spelling, nothing else.
+ */
+export async function groqTranscribe(audio: Blob, opts: { prompt?: string; language?: string } = {}): Promise<{ segments: Segment[]; language: string }> {
+  const key = groqKey();
+  return withFallback(ROUTES.transcribe.models, async (model) => {
+    const form = new FormData();
+    form.append("file", audio, "chunk.wav");
+    form.append("model", model);
+    form.append("response_format", "verbose_json");
+    form.append("timestamp_granularities[]", "segment");
+    form.append("temperature", "0");
+    if (opts.prompt) form.append("prompt", opts.prompt.slice(0, 600));
+    if (opts.language) form.append("language", opts.language);
+    let res: Response;
+    try {
+      res = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}` },
+        body: form,
+        signal: AbortSignal.timeout(55000),
+      });
+    } catch (err) {
+      if (err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError")) throw new EngineError("groq", "timeout", "Transcribing took too long.");
+      throw new EngineError("groq", "failed", "Couldn't reach the speech model.");
+    }
+    if (!res.ok) throw classify("groq", res.status, await res.text().catch(() => ""), Number(res.headers.get("retry-after")) || 0);
+    const data = (await res.json()) as {
+      language?: string;
+      segments?: { start: number; end: number; text: string; no_speech_prob?: number; avg_logprob?: number; compression_ratio?: number }[];
+    };
+    const segments = (data.segments ?? [])
+      // Whisper "hears" words in silence and loops on noise; drop those segments.
+      .filter((g) => (g.no_speech_prob ?? 0) < 0.7 && (g.compression_ratio ?? 1) < 2.6 && (g.avg_logprob ?? 0) > -1.2)
+      .map((g) => ({ s: Math.round(g.start * 10) / 10, e: Math.round(g.end * 10) / 10, text: g.text.trim() }))
+      .filter((g) => g.text && !/^(thank you\.?|thanks for watching!?|you|\.+)$/i.test(g.text));
+    return { segments, language: data.language ?? "" };
+  });
 }
 
 /* ---------------- Hugging Face ---------------- */

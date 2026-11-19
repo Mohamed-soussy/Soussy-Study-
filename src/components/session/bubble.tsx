@@ -127,7 +127,7 @@ export function TimerBubble() {
   useTick(live);
   const [open, setOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [pos, setPos] = useState<{ side: "left" | "right"; y: number }>({ side: "right", y: 0.75 });
+  const [pos, setPos] = useState<{ side: "left" | "right"; y: number }>({ side: "right", y: 0.55 });
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
   const moved = useRef(false);
   const [pip, setPip] = useState<Window | null>(null);
@@ -197,16 +197,18 @@ export function TimerBubble() {
   const u = currentUnit(s);
   const tone = toneOf(s);
   const label = live && u && s.status !== "done" ? t("unitOf", { n: s.index + 1, total: s.units.length, name: u.name }) : null;
+  // Idle, it shrinks and fades so it covers less of the page (it never sits on a Send button).
+  const size = live ? 56 : 44;
   const style: React.CSSProperties = drag
-    ? { left: drag.x - 28, top: drag.y - 28 }
+    ? { left: drag.x - size / 2, top: drag.y - size / 2 }
     : {
         [pos.side]: "max(12px, env(safe-area-inset-" + pos.side + ", 0px))",
-        top: `calc(${(pos.y * 100).toFixed(1)}% - 28px)`,
+        top: `calc(${(pos.y * 100).toFixed(1)}% - ${size / 2}px)`,
       };
 
   return (
     <>
-      <div className="fixed z-30 flex flex-col items-center gap-1 md:z-30" style={style} data-testid="bubble">
+      <div className={`fixed z-30 flex flex-col items-center gap-1 transition-opacity ${live || open ? "" : "opacity-75 hover:opacity-100"}`} style={style} data-testid="bubble">
         <button
           type="button"
           aria-label={`${t("label")}${label ? `: ${label}` : ""}`}
@@ -230,7 +232,7 @@ export function TimerBubble() {
           className="touch-none select-none rounded-full transition-transform hover:scale-105 active:scale-95"
           style={{ cursor: drag ? "grabbing" : "grab" }}
         >
-          <Face s={s} />
+          <Face s={s} size={size} />
         </button>
         {label && !open && (
           <span className="max-w-40 truncate rounded-full bg-surface/95 px-2 py-0.5 text-[11px] font-medium text-text shadow ring-1 ring-border" style={{ color: tone === "over" ? "var(--warning)" : undefined }}>

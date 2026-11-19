@@ -2,6 +2,7 @@
 
 import { getPack } from "@/curriculum";
 import { unitsFor } from "@/curriculum/units";
+import { findMatch } from "@/lib/school/match";
 import { getRepo } from "@/lib/data/repo";
 import type { Folder, NewEvent, VaultFile } from "@/lib/data/types";
 import type { Profile } from "@/lib/profile/types";
@@ -137,7 +138,17 @@ export async function uploadAndProcess(file: File, folderId: string | null, prof
       }
       // Dates found in the file go to the Review tray, never straight onto the calendar.
       const today = new Date().toISOString().slice(0, 10);
-      const tasks = tag.tasks.filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x.date) && x.date >= today);
+      const existing = await repo.events.list().catch(() => []);
+      const tasks = tag.tasks.filter(
+        (x) =>
+          /^\d{4}-\d{2}-\d{2}$/.test(x.date) &&
+          x.date >= today &&
+          // Already on the calendar (from a lesson, Teams or another file)? Don't add it twice.
+          !findMatch(
+            { type: x.type, title: x.title, description: x.quote, subject_code: valid, due: new Date(`${x.date}T08:00:00`).toISOString(), all_day: true, origin: { kind: "paste", label: "" }, review: true },
+            existing,
+          ),
+      );
       if (tasks.length) {
         await repo.events.createMany(
           tasks.map((x) => ({

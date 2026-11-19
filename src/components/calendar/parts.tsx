@@ -79,7 +79,6 @@ export function QuickAddBar({ enrollments, onAdd }: { enrollments: Enrollment[];
   );
 }
 
-/** AI-found items wait here until the student confirms them (section 5). */
 export function ReviewTray({
   items,
   enrollments,

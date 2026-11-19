@@ -4,6 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { getRepo } from "@/lib/data/repo";
 import type { CalendarEvent, NewEvent } from "@/lib/data/types";
 
+/** Fired when something outside the page (school sync) changed the calendar. */
+export const EVENTS_CHANGED = "soussy:events-changed";
+
 /** Loads the student's events and offers create/update/delete with instant (optimistic) updates. */
 export function useEvents() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -20,6 +23,8 @@ export function useEvents() {
 
   useEffect(() => {
     reload();
+    window.addEventListener(EVENTS_CHANGED, reload);
+    return () => window.removeEventListener(EVENTS_CHANGED, reload);
   }, [reload]);
 
   const create = useCallback(async (e: NewEvent) => {

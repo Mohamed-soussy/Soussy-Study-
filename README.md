@@ -70,6 +70,33 @@ change speed, captions-only mode, and **interrupt and ask**: pause, tap or circl
 - **Cloud checks (opt-in, off by default):** a 256 px JPEG every 2 minutes to Gemini after a clear warning that
   Google may use it. Rate-limited on the server (1 a minute, 300 a day).
 
+## What's in Phase 5 (and Phase 4)
+
+**Phase 4, AI whiteboard,** was built early (with the three-engine setup) and passes its checks: speaking and drawing
+start in about 3.4 s, each drawing lands on its word, and pausing, circling a shape and asking gets an answer about it.
+
+| Area | Where |
+| --- | --- |
+| **Lesson analyzer**: upload video/audio (up to 3 h), a Teams transcript (.vtt / .docx), or record audio in class | `src/app/(app)/lessons/` |
+| Transcription with Groq Whisper, in ~2-minute pieces cut at quiet moments, in the browser (the recording is never uploaded) | `src/lib/lessons/audio.ts`, `src/app/api/lessons/transcribe/` |
+| Slides and whiteboard read from video frames when the picture changes, pinned to their time | `src/lib/lessons/frames.ts`, `src/app/api/lessons/slide/` |
+| Homework, tests, deadlines, announcements, stressed points, concepts, class questions, chapters, each with the exact quote and time | `src/prompts/lesson.v1.ts`, `src/app/api/lessons/analyze/` |
+| Real dates from "for Thursday", "next lesson" (from the timetable), "by the 14th", counted from the lesson date, in code, not by the AI | `src/lib/school/dates.ts` |
+| Cross-check with the calendar and Teams: New / Already there (merged, both sources) / Different date (settle in one tap) | `src/lib/school/match.ts`, `src/lib/school/apply.ts` |
+| Lesson page: player, transcript that follows along, chapters, action items with "Heard at 34:12", summary, "What I missed", flashcards, 10-question quiz, whiteboard recap, notes to the right unit folder, chat with timestamped quotes | `src/app/(app)/lessons/[id]/` |
+| **School Level 1** (no approval): calendar feeds (.ics, weekly repeats, time zones), "Paste from school" | `src/lib/school/ics.ts`, `src/app/api/school/`, `src/components/school/connections-panel.tsx` |
+| **School Level 2**: "Connect Microsoft" (OAuth + PKCE, read-only): Outlook calendar, OneDrive files, Teams assignments; tokens AES-256-GCM encrypted, server only; sync on open + every 30 min; per-type and per-class toggles; disconnect with keep/delete | `src/lib/school/microsoft.ts`, `src/app/api/microsoft/` |
+| Home → "New from school" and the calendar Review tray (Accept / Edit / Dismiss) | `src/components/school/inbox.tsx`, `review-item.tsx` |
+| "For school IT" one-pager (prints to PDF) | `/school-it` |
+| Database: lessons, connections, encrypted connection_secrets, event origins / external ids | `supabase/migrations/0005_lessons_connections.sql` |
+
+**To turn on "Connect Microsoft"**, register an app in Microsoft Entra ID and set `MS_CLIENT_ID`, `MS_CLIENT_SECRET`
+(steps in `.env.example`). Until then the card says what is missing and can show clearly labeled demo data. Teams
+assignments usually need the school's IT to approve the app once; calendar and files usually work without it.
+
+**Groq free-tier limits for lessons:** Whisper allows about 2 hours of audio per hour and 8 hours a day per account; a
+45-minute class uses one AI use from the daily allowance.
+
 ## What's in Phase 3
 
 | Area | Where |
@@ -123,8 +150,8 @@ Tools from later phases (Calendar, Study Hub, Whiteboard…) are in the menu and
 
 - **Search by meaning** (pgvector + Hugging Face embeddings) is wired but the Hugging Face account has no Inference credits; search uses Postgres full-text search until then.
 - **Scanned PDFs** have no text layer; students upload photos of the pages instead (read privately by Groq).
-- **Import from OneDrive, Google Drive and Teams** arrives with the school connectors in phase 5.
-- **Audio and video transcripts** arrive in phase 5. Files upload and play now.
+- **Teams Level 3** (school-approved app: sync without opening the app, webhooks, meeting recordings), **Google Drive / Classroom / Canvas** connectors: phase 6.
+- **Speaker labels** come from Teams transcripts; Whisper recordings have none.
 - **Two-voice audio summaries** need a text-to-speech key; the script and browser read-aloud work now.
 - **Sharing with a Squad** arrives with Squads in phase 7.
 

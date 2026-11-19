@@ -4,9 +4,10 @@ import { Download, LogOut, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { Suspense, useEffect, useState, useTransition } from "react";
 import { useCurrentProfile } from "@/components/shell/profile-context";
 import { DevicesPanel } from "@/components/devices/devices-panel";
+import { ConnectionsPanel } from "@/components/school/connections-panel";
 import { Button } from "@/components/ui/button";
 import { Card, Chip, PageHeader } from "@/components/ui/primitives";
 import { getPack } from "@/curriculum";
@@ -154,6 +155,9 @@ export default function SettingsPage() {
             </Row>
           </Card>
 
+          <Suspense>
+            <ConnectionsPanel />
+          </Suspense>
           <DevicesPanel />
 
           <h2 className="mt-3 text-lg font-semibold">{t("privacy")}</h2>

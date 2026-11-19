@@ -34,7 +34,7 @@ export const NAV: NavItem[] = [
   { href: "/whiteboard", key: "whiteboard", icon: PenTool },
   { href: "/solver", key: "solver", icon: Calculator },
   { href: "/vault", key: "vault", icon: BookMarked, phase: 6 },
-  { href: "/lessons", key: "lessons", icon: Video, phase: 5 },
+  { href: "/lessons", key: "lessons", icon: Video },
   { href: "/flashcards", key: "flashcards", icon: Layers },
   { href: "/focus", key: "focus", icon: Timer },
   { href: "/core", key: "core", icon: GraduationCap, phase: 7 },

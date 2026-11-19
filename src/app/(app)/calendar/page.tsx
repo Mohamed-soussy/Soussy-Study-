@@ -5,7 +5,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useMemo, useState } from "react";
 import { EventForm, blankEvent } from "@/components/calendar/event-form";
 import { EventPanel } from "@/components/calendar/event-panel";
-import { QuickAddBar, ReviewTray, SyncButton, WorkloadStrip } from "@/components/calendar/parts";
+import { QuickAddBar, SyncButton, WorkloadStrip } from "@/components/calendar/parts";
+import { SchoolInbox } from "@/components/school/inbox";
 import { AgendaView, MonthView, TimeGridView, type View } from "@/components/calendar/views";
 import { useCurrentProfile } from "@/components/shell/profile-context";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ export default function CalendarPage() {
   const locale = useLocale();
   const profile = useCurrentProfile();
   const enrollments = profile.enrollments;
-  const { events, status, create, createMany, update, remove } = useEvents();
+  const { events, status, create, createMany, update, remove, reload } = useEvents();
 
   const [view, setView] = useState<View>("month");
   const [cursor, setCursor] = useState(() => startOfDay(new Date()));
@@ -34,7 +35,6 @@ export default function CalendarPage() {
   const [toast, setToast] = useState<string | null>(null);
   const clearToast = useCallback(() => setToast(null), []);
 
-  const review = useMemo(() => events.filter((e) => e.in_review), [events]);
   const opened = events.find((e) => e.id === openId) ?? null;
 
   /** New big submissions get their milestone chain right away (section 5). */
@@ -105,12 +105,7 @@ export default function CalendarPage() {
 
       <QuickAddBar enrollments={enrollments} onAdd={add} />
 
-      <ReviewTray
-        items={review}
-        enrollments={enrollments}
-        onConfirm={(id) => update(id, { in_review: false })}
-        onDismiss={(id) => remove(id)}
-      />
+      <SchoolInbox events={events} enrollments={enrollments} onChanged={reload} variant="calendar" />
 
       <section className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">

@@ -51,7 +51,7 @@ const CORE: [RegExp, string, string][] = [
 const AR_DAYS = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 
 /** Minimal Arabic dates: اليوم, غدًا, بعد غد, weekdays (+ القادم for next week), or 12/3. */
-function parseArabicDate(text: string, ref: Date): { date: Date; match: string } | null {
+export function parseArabicDate(text: string, ref: Date): { date: Date; match: string } | null {
   const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
   if (/بعد غد/.test(text)) return { date: new Date(day(ref).getTime() + 2 * 864e5), match: "بعد غد" };
   if (/غدا|غدًا|بكرة|بكره/.test(text)) return { date: new Date(day(ref).getTime() + 864e5), match: text.match(/غدا|غدًا|بكرة|بكره/)![0] };
@@ -74,6 +74,27 @@ function parseArabicDate(text: string, ref: Date): { date: Date; match: string }
     return { date: d, match: m[0] };
   }
   return null;
+}
+
+/** The kind of item a phrase describes ("Chem test" → test), or null if no word matched. */
+export function detectType(text: string): EventType | null {
+  return TYPE_WORDS.find(([, re]) => re.test(text))?.[0] ?? null;
+}
+
+/**
+ * Which of the student's subjects a phrase is about: "Chem", "IB Chemistry HL - 12B",
+ * "كيمياء". Also used for Teams class names and calendar feeds.
+ */
+export function detectSubject(text: string, enrollments: Enrollment[]): { code: string; name: string } | null {
+  for (const [alias, inName] of SUBJECT_ALIASES) {
+    if (!alias.test(text)) continue;
+    const hit = enrollments.find((e) => inName.test(e.name));
+    if (hit) return { code: hit.subjectId, name: hit.name };
+  }
+  const direct = enrollments.find((e) => text.toLowerCase().includes(e.name.toLowerCase()));
+  if (direct) return { code: direct.subjectId, name: direct.name };
+  const core = CORE.find(([re]) => re.test(text));
+  return core ? { code: core[1], name: core[2] } : null;
 }
 
 export interface QuickAddResult {
@@ -109,34 +130,12 @@ export function parseQuickAdd(input: string, enrollments: Enrollment[], ref = ne
   if (!date) return null;
 
   // 2. Type.
-  const type = TYPE_WORDS.find(([, re]) => re.test(text))?.[0] ?? "homework";
+  const type = detectType(text) ?? "homework";
 
   // 3. Subject: the student's own enrollments first, then IB core.
-  let subjectCode: string | null = null;
-  let subjectName: string | null = null;
-  for (const [alias, inName] of SUBJECT_ALIASES) {
-    if (!alias.test(text)) continue;
-    const hit = enrollments.find((e) => inName.test(e.name));
-    if (hit) {
-      subjectCode = hit.subjectId;
-      subjectName = hit.name;
-      break;
-    }
-  }
-  if (!subjectCode) {
-    const direct = enrollments.find((e) => text.toLowerCase().includes(e.name.toLowerCase()));
-    if (direct) {
-      subjectCode = direct.subjectId;
-      subjectName = direct.name;
-    }
-  }
-  if (!subjectCode) {
-    const core = CORE.find(([re]) => re.test(text));
-    if (core) {
-      subjectCode = core[1];
-      subjectName = core[2];
-    }
-  }
+  const subject = detectSubject(text, enrollments);
+  const subjectCode = subject?.code ?? null;
+  const subjectName = subject?.name ?? null;
 
   // 4. Topic: whatever follows "on / about / for / عن / في" once the date is removed.
   const rest = text.replace(dateText, " ").replace(/\s+/g, " ").trim();

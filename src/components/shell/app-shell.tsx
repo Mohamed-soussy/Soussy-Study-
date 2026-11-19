@@ -13,6 +13,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { cn } from "@/lib/utils";
 import { TimerBubble } from "@/components/session/bubble";
 import { DeviceSync, sendToOtherDevice } from "@/components/devices/device-sync";
+import { SchoolSync } from "@/components/school/school-sync";
 import { NAV, TABS } from "./nav";
 import { ProfileContext } from "./profile-context";
 
@@ -89,6 +90,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <ProfileContext.Provider value={profile}>
       <DeviceSync />
+      <SchoolSync />
       <div className="flex min-h-dvh">
         <Sidebar collapsed={collapsed} onToggle={toggle} />
         <div className="flex min-w-0 flex-1 flex-col">

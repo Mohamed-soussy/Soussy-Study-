@@ -15,7 +15,12 @@ function linkCitations(md: string) {
 }
 
 /** Chat answer renderer: Markdown, tables, LaTeX math, chemistry and clickable citations (section 6.2). */
-export function Markdown({ content, citations }: { content: string; citations: Citation[] }) {
+/** Turns "[34:12]" into a link that jumps to that moment of a lesson recording. */
+function linkTimes(md: string) {
+  return md.replace(/\[(\d{1,2}:\d{2}(?::\d{2})?)\](?!\()/g, (_, t) => `[${t}](#t-${t})`);
+}
+
+export function Markdown({ content, citations, onSeek }: { content: string; citations: Citation[]; onSeek?: (seconds: number) => void }) {
   return (
     <div className="soussy-md text-[15px] leading-7" dir="auto">
       <ReactMarkdown
@@ -23,6 +28,19 @@ export function Markdown({ content, citations }: { content: string; citations: C
         rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false }]]}
         components={{
           a: ({ href, children }) => {
+            const time = href?.match(/^#t-([\d:]+)$/);
+            if (time && onSeek) {
+              const secs = time[1].split(":").map(Number).reduce((a, n) => a * 60 + n, 0);
+              return (
+                <button
+                  type="button"
+                  onClick={() => onSeek(secs)}
+                  className="mx-0.5 inline-flex items-center rounded-full bg-primary-soft px-1.5 align-text-top font-mono text-[11px] font-semibold text-primary hover:bg-primary hover:text-on-primary"
+                >
+                  {time[1]}
+                </button>
+              );
+            }
             const m = href?.match(/^#cite-(\d+)$/);
             if (m) {
               const c = citations.find((x) => x.n === Number(m[1]));
@@ -49,7 +67,7 @@ export function Markdown({ content, citations }: { content: string; citations: C
           },
         }}
       >
-        {linkCitations(content)}
+        {onSeek ? linkTimes(linkCitations(content)) : linkCitations(content)}
       </ReactMarkdown>
     </div>
   );
