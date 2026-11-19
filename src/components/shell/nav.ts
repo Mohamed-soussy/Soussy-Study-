@@ -27,8 +27,8 @@ export interface NavItem {
 /** Sidebar order from section 4. */
 export const NAV: NavItem[] = [
   { href: "/home", key: "home", icon: Home },
-  { href: "/calendar", key: "calendar", icon: CalendarDays, phase: 2 },
-  { href: "/hub", key: "hub", icon: Library, phase: 2 },
+  { href: "/calendar", key: "calendar", icon: CalendarDays },
+  { href: "/hub", key: "hub", icon: Library },
   { href: "/whiteboard", key: "whiteboard", icon: PenTool, phase: 4 },
   { href: "/solver", key: "solver", icon: Calculator, phase: 3 },
   { href: "/vault", key: "vault", icon: BookMarked, phase: 6 },

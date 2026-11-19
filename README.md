@@ -3,8 +3,10 @@
 An AI study platform for IB Diploma and American high school students (and any curriculum),
 built for a CAS project at Khalid International Schools, Riyadh. **Students never pay.**
 
-This repository is **Phase 1 — Foundation** of the Master Build Prompt (section 16):
-design system, logo, sign-in, onboarding, app shell and an empty dashboard, in English and Arabic.
+Built phase by phase from the Master Build Prompt (section 16). Done so far:
+
+- **Phase 1 — Foundation:** design system, logo, sign-in, onboarding, app shell, dashboard, English and Arabic.
+- **Phase 2 — Calendar + Study Hub:** smart calendar, file vault, AI tutor with citations, intent cards.
 
 ## Run it
 
@@ -18,12 +20,35 @@ everything works, but it's saved only in that browser.
 
 ## Connect Supabase (real accounts)
 
-1. In Supabase, open **SQL Editor**, paste `supabase/migrations/0001_foundation.sql`, and run it.
+1. In Supabase, open **SQL Editor** and run each file in `supabase/migrations/` in order (`0001_…`, then `0002_…`).
 2. Copy **Project Settings → API → anon public key** into `.env.local` as `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 3. In **Authentication → URL Configuration**, add `http://localhost:3000/auth/callback`
    (and your live URL's `/auth/callback` later) to the redirect URLs.
 4. Email + password works right away. Google and Microsoft need providers turned on in
    **Authentication → Providers** with a Google Cloud OAuth client and a Microsoft Entra app.
+
+## The AI
+
+Add `ANTHROPIC_API_KEY` to `.env.local` (and to Vercel's environment variables when you deploy).
+Models live in one place, `src/lib/ai/server.ts`: Claude Sonnet 5.5 for the tutor, Claude Haiku 5.5 for
+tagging and reading images. Prompts are versioned in `src/prompts/`. Each student gets 60 AI requests a day;
+when they run out, everything else keeps working and the count resets the next day.
+
+## What's in Phase 2
+
+| Area | Where |
+| --- | --- |
+| Calendar: month, week, day, agenda; drag to move; every event type and field | `src/app/(app)/calendar/`, `src/components/calendar/` |
+| Plain-language quick-add (English + Arabic, no AI needed) | `src/lib/calendar/quick-add.ts` |
+| Review tray, study sprints, milestone chains, workload strip, re-balance | `src/lib/calendar/logic.ts` |
+| Private calendar link for Google / Outlook / Apple | `src/app/api/ics/[token]/route.ts` |
+| Vault: auto folders (Subject → Unit → Topic), uploads, camera, storage meter | `src/components/hub/files-tab.tsx`, `src/curriculum/units.ts` |
+| Reading files: PDF, Word, PowerPoint, text; images and scanned PDFs via AI | `src/lib/extract.ts`, `src/app/api/extract/` |
+| AI tagging: subject, unit, topic, summary, key terms, dates → Review tray | `src/app/api/tag/`, `src/prompts/tag-file.v1.ts` |
+| File viewer: highlights, comments, "Ask AI about this page" | `src/app/(app)/hub/file/[id]/` |
+| Tutor chat: sources first, page citations, Socratic / "Just show me", math, voice, read-aloud | `src/components/hub/chat-tab.tsx`, `src/app/api/chat/`, `src/prompts/chat.v1.ts` |
+| Intent cards (all groups from section 6.3) | `src/lib/hub/intent-cards.ts` |
+| Database: events, folders, files, file_chunks, file_notes, chats, messages, ai_usage, storage bucket | `supabase/migrations/0002_calendar_hub.sql` |
 
 ## What's in Phase 1
 
@@ -41,6 +66,13 @@ everything works, but it's saved only in that browser.
 Tools from later phases (Calendar, Study Hub, Whiteboard…) are in the menu and say which phase delivers them.
 
 ## Not done yet (needs something from outside)
+
+- **AI answers** need `ANTHROPIC_API_KEY`. Without it the chat, tagging and image reading say so instead of pretending.
+- **Search by meaning** (pgvector embeddings) needs an embeddings provider key; search uses Postgres full-text search for now.
+- **Import from OneDrive, Google Drive and Teams** arrives with the school connectors in phase 5.
+- **Audio and video transcripts** arrive in phase 5. Files upload and play now.
+- **Two-voice audio summaries** need a text-to-speech key; the script and browser read-aloud work now.
+- **Sharing with a Squad** arrives with Squads in phase 7.
 
 - **Guardian approval emails** for under-13 students: needs an email service. These accounts stay locked until then.
 - **Google / Microsoft sign-in**: needs the OAuth apps above.

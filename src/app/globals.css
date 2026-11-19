@@ -129,3 +129,86 @@ h3 {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* PDF text layer extras (pdf.js's own .textLayer styles do the sizing). */
+.soussy-text-layer {
+  z-index: 2;
+}
+.soussy-text-layer ::selection {
+  background: rgb(79 70 229 / 0.3);
+}
+.soussy-text-layer span.soussy-hl {
+  background: rgb(250 204 21 / 0.45);
+  border-radius: 2px;
+}
+
+/* Chat answers rendered from Markdown. */
+.soussy-md {
+  overflow-wrap: anywhere;
+}
+.soussy-md > * + * {
+  margin-top: 0.6em;
+}
+.soussy-md h1,
+.soussy-md h2,
+.soussy-md h3 {
+  font-size: 1.05em;
+  font-weight: 700;
+  margin-top: 1em;
+}
+.soussy-md ul {
+  list-style: disc;
+  padding-inline-start: 1.3em;
+}
+.soussy-md ol {
+  list-style: decimal;
+  padding-inline-start: 1.3em;
+}
+.soussy-md li + li {
+  margin-top: 0.25em;
+}
+.soussy-md a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+.soussy-md code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--surface-2);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+.soussy-md pre {
+  background: var(--surface-2);
+  padding: 0.8em 1em;
+  border-radius: 10px;
+  overflow-x: auto;
+}
+.soussy-md pre code {
+  background: none;
+  padding: 0;
+}
+.soussy-md table {
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+}
+.soussy-md th,
+.soussy-md td {
+  border: 1px solid var(--border);
+  padding: 0.35em 0.6em;
+}
+.soussy-md th {
+  background: var(--surface-2);
+}
+.soussy-md blockquote {
+  border-inline-start: 3px solid var(--border);
+  padding-inline-start: 0.8em;
+  color: var(--muted);
+}
+.soussy-md .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.2em 0;
+}
