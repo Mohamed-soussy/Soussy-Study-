@@ -1,26 +1,131 @@
 @import "tailwindcss";
 
+/*
+ * Soussy Study design tokens (Master Build Prompt, section 2).
+ * Every color is a CSS variable so light and dark mode share the same class names.
+ * Theme follows the device unless the student picks one in Settings
+ * (stored as data-theme on <html>).
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --border: #e2e8f0;
+  --primary: #4f46e5;
+  --primary-soft: #eef2ff;
+  --on-primary: #ffffff;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --submission: #8b5cf6;
+  --event: #14b8a6;
+  --text: #0f172a;
+  --muted: #64748b;
+
+  /* 8 soft subject hues (section 2: "every subject gets its own color") */
+  --subject-1: #6366f1;
+  --subject-2: #0ea5e9;
+  --subject-3: #10b981;
+  --subject-4: #f59e0b;
+  --subject-5: #ec4899;
+  --subject-6: #8b5cf6;
+  --subject-7: #14b8a6;
+  --subject-8: #f97316;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background: #0f172a;
+    --surface: #1e293b;
+    --surface-2: #273449;
+    --border: #334155;
+    --primary: #818cf8;
+    --primary-soft: #272a52;
+    --on-primary: #0f172a;
+    --success: #34d399;
+    --warning: #fbbf24;
+    --danger: #f87171;
+    --submission: #a78bfa;
+    --event: #2dd4bf;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --background: #0f172a;
+  --surface: #1e293b;
+  --surface-2: #273449;
+  --border: #334155;
+  --primary: #818cf8;
+  --primary-soft: #272a52;
+  --on-primary: #0f172a;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --submission: #a78bfa;
+  --event: #2dd4bf;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-soft: var(--primary-soft);
+  --color-on-primary: var(--on-primary);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-submission: var(--submission);
+  --color-event: var(--event);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+
+  --font-sans: var(--font-inter), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-jakarta), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  --radius-card: 12px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html[lang="ar"] {
+  --font-inter: var(--font-arabic);
+  --font-jakarta: var(--font-arabic);
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  text-wrap: balance;
+  line-height: 1.25;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
