@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { useCurrentProfile } from "@/components/shell/profile-context";
+import { DevicesPanel } from "@/components/devices/devices-panel";
 import { Button } from "@/components/ui/button";
 import { Card, Chip, PageHeader } from "@/components/ui/primitives";
 import { getPack } from "@/curriculum";
@@ -152,6 +153,8 @@ export default function SettingsPage() {
               <p className="text-sm text-muted">{isSupabaseConfigured ? t("accountLive") : t("accountDemo")}</p>
             </Row>
           </Card>
+
+          <DevicesPanel />
 
           <h2 className="mt-3 text-lg font-semibold">{t("privacy")}</h2>
           <Card className="flex flex-col gap-3 p-4">

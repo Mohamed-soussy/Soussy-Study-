@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { engineErrorMessage, geminiJSON, ROUTES } from "@/lib/ai/engines";
+import { engineErrorMessage, geminiJSON, groqJSON, ROUTES } from "@/lib/ai/engines";
 import { guardAi, requireEngine, requireUser } from "@/lib/ai/server";
 import { getSharedLesson, putSharedLesson } from "@/lib/whiteboard/cache";
 import { lessonKey, sanitizeLesson, type Lesson } from "@/lib/whiteboard/types";
-import { WHITEBOARD_SCHEMA, WHITEBOARD_SYSTEM, whiteboardPrompt } from "@/prompts/whiteboard.v1";
+import { solutionWhiteboardPrompt, WHITEBOARD_SCHEMA, WHITEBOARD_SCHEMA_STRICT, WHITEBOARD_SYSTEM, whiteboardPrompt } from "@/prompts/whiteboard.v1";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -17,7 +17,33 @@ export async function POST(req: NextRequest) {
   const signedOut = await requireUser();
   if (signedOut) return signedOut;
 
-  const body = (await req.json()) as { topic?: string; subject?: string; level?: string; curriculum?: string; language?: string };
+  const body = (await req.json()) as { topic?: string; subject?: string; level?: string; curriculum?: string; language?: string; problem?: string; solution?: unknown };
+
+  // A student's own solved problem (from the solver) is personal: Groq, and never cached for others.
+  if (body.solution && body.problem) {
+    const missingGroq = requireEngine("groq");
+    if (missingGroq) return missingGroq;
+    const blockedGroq = await guardAi();
+    if (blockedGroq) return blockedGroq;
+    const lang = body.language === "ar" ? "ar" : "en";
+    try {
+      const raw = await groqJSON<unknown>(ROUTES.whiteboardAsk, {
+        name: "lesson",
+        schema: WHITEBOARD_SCHEMA_STRICT,
+        maxTokens: 3500,
+        messages: [
+          { role: "system", content: WHITEBOARD_SYSTEM },
+          { role: "user", content: solutionWhiteboardPrompt(body.problem, body.solution, lang) },
+        ],
+      });
+      const lesson = sanitizeLesson(raw, lang);
+      if (!lesson.segments.length) return NextResponse.json({ error: "empty", message: "The AI returned an empty lesson. Try again." }, { status: 502 });
+      return NextResponse.json({ lesson, cached: false });
+    } catch (err) {
+      return NextResponse.json({ error: "ai_failed", message: engineErrorMessage(err) }, { status: 502 });
+    }
+  }
+
   const topic = (body.topic ?? "").trim().slice(0, 200);
   if (topic.length < 2) return NextResponse.json({ error: "no_topic" }, { status: 400 });
   const language = body.language === "ar" ? "ar" : "en";

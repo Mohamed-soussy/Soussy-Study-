@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, PanelLeftClose, PanelLeftOpen, Search, Settings, Timer } from "lucide-react";
+import { Columns2, LogOut, PanelLeftClose, PanelLeftOpen, Search, Settings, Smartphone } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -11,6 +11,8 @@ import { signOut } from "@/lib/profile/store";
 import { useProfile } from "@/lib/profile/use-profile";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { cn } from "@/lib/utils";
+import { TimerBubble } from "@/components/session/bubble";
+import { DeviceSync, sendToOtherDevice } from "@/components/devices/device-sync";
 import { NAV, TABS } from "./nav";
 import { ProfileContext } from "./profile-context";
 
@@ -25,6 +27,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const c = useTranslations("common");
   const { profile, status } = useProfile();
+  // Inside a split-screen pane (section 4A) pages show without the sidebar and top bar.
+  const [embed, setEmbed] = useState(false);
+  useEffect(() => {
+    try {
+      if (new URLSearchParams(window.location.search).get("embed") === "1") sessionStorage.setItem("soussy.embed", "1");
+      setEmbed(sessionStorage.getItem("soussy.embed") === "1" && window.self !== window.top);
+    } catch {
+      setEmbed(false);
+    }
+  }, []);
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
@@ -64,8 +76,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     });
   }
 
+  if (embed) {
+    return (
+      <ProfileContext.Provider value={profile}>
+        <main className="min-h-dvh px-4 py-4">
+          <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">{children}</div>
+        </main>
+      </ProfileContext.Provider>
+    );
+  }
+
   return (
     <ProfileContext.Provider value={profile}>
+      <DeviceSync />
       <div className="flex min-h-dvh">
         <Sidebar collapsed={collapsed} onToggle={toggle} />
         <div className="flex min-w-0 flex-1 flex-col">
@@ -75,6 +98,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </main>
         </div>
         <BottomTabs />
+        <TimerBubble />
       </div>
     </ProfileContext.Provider>
   );
@@ -151,6 +175,10 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
 
 function TopBar({ name }: { name: string }) {
   const t = useTranslations("nav");
+  const tw = useTranslations("workspace");
+  const td = useTranslations("devices");
+  const pathname = usePathname();
+  const [sent, setSent] = useState(false);
   const c = useTranslations("common");
   const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -223,17 +251,28 @@ function TopBar({ name }: { name: string }) {
           </span>
         )}
 
-        {/* Timer bubble placeholder: the real bubble arrives in phase 3. */}
-        <span
-          title={`${t("timer")} · ${c("comingInPhase", { phase: 3 })}`}
-          className="inline-flex h-10 items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-sm font-medium text-muted"
+        <Link
+          href={`/workspace?left=${encodeURIComponent(pathname)}`}
+          className="hidden size-10 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text sm:flex"
+          title={tw("openSplit")}
+          aria-label={tw("openSplit")}
         >
-          <Timer className="size-4 text-primary" aria-hidden />
-          <span dir="ltr" className="font-mono tabular-nums">
-            25:00
-          </span>
-        </span>
-
+          <Columns2 className="size-5" />
+        </Link>
+        <button
+          type="button"
+          onClick={() => {
+            sendToOtherDevice(window.location.pathname + window.location.search, document.querySelector("main h1")?.textContent?.trim() || document.title);
+            setSent(true);
+            setTimeout(() => setSent(false), 2500);
+          }}
+          className="flex size-10 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text"
+          title={sent ? td("sent") : td("send")}
+          aria-label={td("send")}
+          data-testid="send-device"
+        >
+          <Smartphone className={cn("size-5", sent && "text-success")} />
+        </button>
         <div className="relative" ref={menuRef}>
           <button
             type="button"

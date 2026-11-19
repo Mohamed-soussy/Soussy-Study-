@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       name: "file_tags",
       schema: TAG_SCHEMA,
       messages: [{ role: "user", content: tagPrompt({ ...body, text }) }],
-      maxTokens: 3000,
+      maxTokens: 1500,
     });
     return NextResponse.json(result);
   } catch (err) {

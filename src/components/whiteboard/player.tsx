@@ -169,12 +169,18 @@ export function WhiteboardPlayer({
   onPick,
   picked,
   autoPlay,
+  voice,
+  startMuted,
 }: {
   lesson: Lesson;
   onPausedChange?: (paused: boolean, segment: number) => void;
   onPick?: (shape: PickedShape | null) => void;
   picked?: PickedShape | null;
   autoPlay?: boolean;
+  /** The chosen teacher's voice (section 6A.2). */
+  voice?: { pitch: number; rate: number };
+  /** Start in captions-only mode (another linked device plays the audio). */
+  startMuted?: boolean;
 }) {
   const t = useTranslations("whiteboard");
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -185,7 +191,7 @@ export function WhiteboardPlayer({
   /** Highest word reached per segment, so shapes stay after pausing or replaying. */
   const [reached, setReached] = useState<number[]>(() => lesson.segments.map(() => -1));
   const [playing, setPlaying] = useState(false);
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(Boolean(startMuted));
   const [rate, setRate] = useState(1);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [lasso, setLasso] = useState<number[] | null>(null);
@@ -272,9 +278,10 @@ export function WhiteboardPlayer({
       const u = new SpeechSynthesisUtterance(say);
       const lang = lesson.language === "ar" ? "ar" : "en";
       u.lang = lang === "ar" ? "ar-SA" : "en-US";
-      const voice = synth.getVoices().find((v) => v.lang.toLowerCase().startsWith(lang));
-      if (voice) u.voice = voice;
-      u.rate = rate;
+      const deviceVoice = synth.getVoices().find((v) => v.lang.toLowerCase().startsWith(lang));
+      if (deviceVoice) u.voice = deviceVoice;
+      u.rate = rate * (voice?.rate ?? 1);
+      u.pitch = voice?.pitch ?? 1;
       let gotBoundary = false;
       u.onboundary = (e) => {
         if (e.name && e.name !== "word") return;
@@ -294,7 +301,7 @@ export function WhiteboardPlayer({
       };
       synth.speak(u);
     },
-    [lesson, muted, rate, reach, stop, onPausedChange],
+    [lesson, muted, rate, reach, stop, onPausedChange, voice],
   );
 
   const play = useCallback(() => {

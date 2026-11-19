@@ -1,5 +1,7 @@
 import {
   BookMarked,
+  Columns2,
+  NotebookPen,
   CalendarDays,
   Calculator,
   GraduationCap,
@@ -30,13 +32,15 @@ export const NAV: NavItem[] = [
   { href: "/calendar", key: "calendar", icon: CalendarDays },
   { href: "/hub", key: "hub", icon: Library },
   { href: "/whiteboard", key: "whiteboard", icon: PenTool },
-  { href: "/solver", key: "solver", icon: Calculator, phase: 3 },
+  { href: "/solver", key: "solver", icon: Calculator },
   { href: "/vault", key: "vault", icon: BookMarked, phase: 6 },
   { href: "/lessons", key: "lessons", icon: Video, phase: 5 },
-  { href: "/flashcards", key: "flashcards", icon: Layers, phase: 3 },
+  { href: "/flashcards", key: "flashcards", icon: Layers },
   { href: "/focus", key: "focus", icon: Timer },
   { href: "/core", key: "core", icon: GraduationCap, phase: 7 },
   { href: "/squads", key: "squads", icon: Users, phase: 7 },
+  { href: "/workspace", key: "workspace", icon: Columns2 },
+  { href: "/notes", key: "notes", icon: NotebookPen },
   { href: "/settings", key: "settings", icon: Settings },
 ];
 

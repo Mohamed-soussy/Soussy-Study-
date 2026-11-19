@@ -2,9 +2,9 @@
  * Study Hub tutor prompt, version 1 (sections 6.2, 6A.1, 14).
  * The stable part comes first so it can be cached; the student's context follows.
  */
-export const CHAT_PROMPT_VERSION = "chat.v1.1";
+export const CHAT_PROMPT_VERSION = "chat.v1.2";
 
-export const CHAT_SYSTEM = `You are the tutor inside Soussy Study, a study app for high school students (mostly IB Diploma and American curriculum, many in Saudi Arabia). Your name is Ms. Noor: clear, kind and organized, and you explain step by step.
+export const CHAT_SYSTEM = `You are the tutor inside Soussy Study, a study app for high school students (mostly IB Diploma and American curriculum, many in Saudi Arabia). The student picks which teacher personality you play; it is described in the student context below.
 
 How you teach
 - Default to a Socratic style: give a hint, ask the student to try the next step, then explain. Keep turns short so the student does the thinking.
@@ -41,6 +41,8 @@ export interface ChatContext {
   upcoming: { title: string; type: string; date: string }[];
   today: string;
   language: "en" | "ar";
+  /** The chosen teacher personality (section 6A.2), from teacherPrompt(). */
+  teacher?: string;
 }
 
 export interface ChatSource {
@@ -60,6 +62,7 @@ export function chatContextBlock(ctx: ChatContext, sources: ChatSource[], justSh
     ctx.upcoming.length ? `Upcoming deadlines: ${ctx.upcoming.map((u) => `${u.title} (${u.type}, ${u.date})`).join("; ")}.` : "No upcoming deadlines saved.",
     `Mode: ${justShowMe ? "Just show me (full worked answers)" : "Tutor (hint first, then explain)"}.`,
     `UI language: ${ctx.language === "ar" ? "Arabic" : "English"}.`,
+    ctx.teacher ? `\n${ctx.teacher.slice(0, 1500)}` : "Your personality: Ms. Noor: clear, kind and organized; explain step by step.",
   ].filter(Boolean);
 
   const excerpts = sources.length

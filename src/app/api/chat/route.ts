@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        for await (const delta of groqStream(ROUTES.chat, [{ role: "system", content: system }, ...history], 4000)) {
+        for await (const delta of groqStream(ROUTES.chat, [{ role: "system", content: system }, ...history], 1800)) {
           controller.enqueue(encoder.encode(delta));
         }
       } catch (err) {

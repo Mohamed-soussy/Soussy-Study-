@@ -11,6 +11,10 @@ import { Card, Chip, EmptyState, Input, PageHeader, Select } from "@/components/
 import { getPack } from "@/curriculum";
 import { lessonKey, type Lesson } from "@/lib/whiteboard/types";
 import type { PickedShape } from "@/components/whiteboard/player";
+import { TeacherPicker } from "@/components/teachers/teacher-picker";
+import { playsAudioHere } from "@/components/devices/device-sync";
+import { getRepo3, type Prefs } from "@/lib/data/repo3";
+import { teacherFor, teacherPrompt } from "@/lib/teachers";
 
 // Konva needs the browser canvas, so the player loads on the client only.
 const WhiteboardPlayer = dynamic(() => import("@/components/whiteboard/player").then((m) => m.WhiteboardPlayer), { ssr: false });
@@ -37,7 +41,7 @@ function saveRecent(list: Recent[]) {
   }
 }
 
-function speak(text: string, lang: "en" | "ar") {
+function speak(text: string, lang: "en" | "ar", voice = { pitch: 1, rate: 1 }) {
   const synth = window.speechSynthesis;
   if (!synth) return;
   synth.cancel();
@@ -45,6 +49,8 @@ function speak(text: string, lang: "en" | "ar") {
   u.lang = lang === "ar" ? "ar-SA" : "en-US";
   const v = synth.getVoices().find((x) => x.lang.toLowerCase().startsWith(lang));
   if (v) u.voice = v;
+  u.pitch = voice.pitch;
+  u.rate = voice.rate;
   synth.speak(u);
 }
 
@@ -69,8 +75,41 @@ function WhiteboardPage() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
+  const [prefs, setPrefs] = useState<Prefs>({});
+  useEffect(() => {
+    getRepo3().prefs.get().then(setPrefs).catch(() => {});
+  }, []);
+  const teacher = teacherFor(prefs, subject || null);
 
   useEffect(() => setRecent(loadRecent()), []);
+
+  // "Send to whiteboard" from the solver: replay that solution as a lesson.
+  useEffect(() => {
+    if (params.get("from") !== "solver") return;
+    let data: { problem: string; solution: { topic?: string } } | null = null;
+    try {
+      data = JSON.parse(sessionStorage.getItem("soussy.whiteboard.fromSolver") ?? "null");
+      sessionStorage.removeItem("soussy.whiteboard.fromSolver");
+    } catch {
+      data = null;
+    }
+    if (!data) return;
+    setTopic(data.solution.topic ?? "");
+    setLoading(true);
+    fetch("/api/whiteboard", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ problem: data.problem, solution: data.solution, language: locale }),
+    })
+      .then(async (res) => {
+        const d = (await res.json()) as { lesson?: Lesson; message?: string };
+        if (!res.ok || !d.lesson) throw new Error(d.message ?? String(res.status));
+        setLesson(d.lesson);
+        setCached(false);
+      })
+      .catch((err) => setError(t("error", { message: err instanceof Error ? err.message : "?" })))
+      .finally(() => setLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function explain(e?: React.FormEvent) {
     e?.preventDefault();
@@ -124,12 +163,12 @@ function WhiteboardPage() {
       const res = await fetch("/api/whiteboard/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: lesson.title, segment: lesson.segments[segment]?.say ?? "", shape: picked, question, language: locale }),
+        body: JSON.stringify({ title: lesson.title, segment: lesson.segments[segment]?.say ?? "", shape: picked, question, language: locale, teacher: teacherPrompt(teacher) }),
       });
       const data = (await res.json()) as { answer?: string; message?: string };
       const text = data.answer ?? data.message ?? "…";
       setAnswer(text);
-      if (data.answer) speak(data.answer, locale);
+      if (data.answer) speak(data.answer, locale, teacher.voice);
     } finally {
       setAsking(false);
     }
@@ -188,8 +227,19 @@ function WhiteboardPage() {
                   {lesson.title}
                 </h2>
                 {cached && <Chip>{t("cached")}</Chip>}
+                <span className="ms-auto">
+                  <TeacherPicker
+                    prefs={prefs}
+                    subjectCode={subject || null}
+                    subjectName={profile.enrollments.find((e) => e.subjectId === subject)?.name}
+                    onChange={(p) => {
+                      setPrefs(p);
+                      getRepo3().prefs.set(p).catch(() => {});
+                    }}
+                  />
+                </span>
               </div>
-              <WhiteboardPlayer lesson={lesson} autoPlay onPausedChange={onPausedChange} onPick={setPicked} picked={picked} />
+              <WhiteboardPlayer lesson={lesson} autoPlay onPausedChange={onPausedChange} onPick={setPicked} picked={picked} voice={teacher.voice} startMuted={!playsAudioHere()} />
               <p className="text-xs text-muted">{t("voiceNote")}</p>
             </>
           ) : (

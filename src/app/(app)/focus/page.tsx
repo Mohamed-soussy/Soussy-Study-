@@ -9,6 +9,7 @@ import { Card, Chip, Field, Input, PageHeader } from "@/components/ui/primitives
 import { createDetector, snapshot, type Detector } from "@/lib/focus/detector";
 import { initialRuleState, step, wasWrong, type FocusEvent, type RuleState, type Sensitivity, type Signals } from "@/lib/focus/rules";
 import { ageOn } from "@/lib/profile/types";
+import { breakLeftMs, currentUnit, elapsedMs, plannedMs, serverNow, session, syncServerTime, useSession } from "@/lib/session/store";
 import { cn } from "@/lib/utils";
 
 /* ---------- small storage helpers (per device conveniences) ---------- */
@@ -33,18 +34,6 @@ function savePrefs(p: Prefs) {
     /* ignore */
   }
 }
-/** Adds focused minutes to this week's total (shown on Home). */
-function logMinutes(min: number) {
-  try {
-    const key = "soussy.focus.log";
-    const log = JSON.parse(localStorage.getItem(key) ?? "[]") as { d: string; m: number }[];
-    log.push({ d: new Date().toISOString().slice(0, 10), m: Math.round(min) });
-    localStorage.setItem(key, JSON.stringify(log.slice(-200)));
-  } catch {
-    /* ignore */
-  }
-}
-
 const fmt = (ms: number) => {
   const s = Math.max(0, Math.round(ms / 1000));
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
@@ -64,10 +53,26 @@ export default function FocusPage() {
 
   const [task, setTask] = useState("");
   const [minutes, setMinutes] = useState(25);
-  const [mode, setMode] = useState<Mode>("setup");
-  const [left, setLeft] = useState(25 * 60_000); // ms left in this unit
-  const [breakLeft, setBreakLeft] = useState(0);
-  const [focusedMs, setFocusedMs] = useState(0);
+  // The timer is the shared study session (same as the bubble and linked devices).
+  const sess = useSession();
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    syncServerTime();
+    const id = setInterval(() => setTick((n) => n + 1), 500);
+    return () => clearInterval(id);
+  }, []);
+  const mode: Mode =
+    sess.status === "idle" ? "setup" : sess.status === "running" ? "focus" : sess.status === "break" ? "break" : sess.status === "done" ? "done" : "paused";
+  const left = plannedMs(sess) - elapsedMs(sess);
+  const breakLeft = breakLeftMs(sess);
+  const focusedMs = sess.focusedMs + (sess.status === "running" && sess.runStartedAt ? serverNow() - sess.runStartedAt : 0);
+  const setMode = (m: Mode) => {
+    if (m === "focus") session.resume();
+    else if (m === "paused") session.pause();
+    else if (m === "break") session.takeBreak(5);
+    else if (m === "done") session.finish();
+    else session.clear();
+  };
 
   // Full Focus Mode
   const [fullscreen, setFullscreen] = useState(false);
@@ -108,42 +113,10 @@ export default function FocusPage() {
     return () => evs.forEach((e) => window.removeEventListener(e, mark));
   }, []);
 
-  /* ---------- timer ---------- */
   useEffect(() => {
-    if (mode !== "focus" && mode !== "break") return;
-    let prev = Date.now();
-    const id = setInterval(() => {
-      const now = Date.now();
-      const dt = now - prev;
-      prev = now;
-      if (modeRef.current === "focus") {
-        setFocusedMs((f) => f + dt);
-        setLeft((l) => {
-          if (l - dt <= 0) {
-            setMode("done");
-            return 0;
-          }
-          return l - dt;
-        });
-      } else if (modeRef.current === "break") {
-        setBreakLeft((b) => {
-          if (b - dt <= 0) {
-            setMode("focus");
-            return 0;
-          }
-          return b - dt;
-        });
-      }
-    }, 500);
-    return () => clearInterval(id);
-  }, [mode]);
-
-  useEffect(() => {
-    if (mode === "done") {
-      logMinutes(focusedMs / 60000);
-      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    }
-  }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (mode === "break") session.endBreakIfOver();
+    if (mode === "done" && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  });
 
   /* ---------- Full Focus Mode: fullscreen + leave detection ---------- */
   useEffect(() => {
@@ -190,10 +163,8 @@ export default function FocusPage() {
   }
 
   function start() {
-    setLeft(minutes * 60_000);
-    setFocusedMs(0);
+    session.start([{ name: task.trim() || t("taskPlaceholder"), subject: null, minutes }], 0);
     setLeaves(0);
-    setMode("focus");
     rulesRef.current = initialRuleState(Date.now());
   }
 
@@ -283,7 +254,7 @@ export default function FocusPage() {
   }, [camState, prefs.cloud, mode]);
 
   /* ---------- UI ---------- */
-  const total = minutes * 60_000;
+  const total = Math.max(1, plannedMs(sess));
   const progress = mode === "setup" ? 0 : 1 - left / total;
   const ringColor = mode === "break" ? "var(--success)" : mode === "paused" ? "var(--muted)" : left < 0 ? "var(--warning)" : "var(--primary)";
   const r = 88;
@@ -335,7 +306,7 @@ export default function FocusPage() {
           ) : (
             <Card className="flex flex-col items-center gap-5 p-6">
               <p className="text-center text-lg font-semibold" dir="auto">
-                {task || t("taskPlaceholder")}
+                {currentUnit(sess)?.name ?? (task || t("taskPlaceholder"))}
               </p>
               <div className="relative flex size-52 items-center justify-center">
                 <svg viewBox="0 0 200 200" className="absolute inset-0 -rotate-90" aria-hidden>
@@ -455,7 +426,6 @@ export default function FocusPage() {
                       size="sm"
                       variant="secondary"
                       onClick={() => {
-                        setBreakLeft(5 * 60_000);
                         setMode("break");
                         setCheckIn({ kind: "phone", reply: ci("breakReply") });
                       }}
@@ -483,7 +453,6 @@ export default function FocusPage() {
                         size="sm"
                         variant="secondary"
                         onClick={() => {
-                          setBreakLeft(5 * 60_000);
                           setMode("break");
                           setCheckIn(null);
                         }}

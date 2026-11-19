@@ -28,6 +28,9 @@ import { Card, Input, Select } from "@/components/ui/primitives";
 import { getPack } from "@/curriculum";
 import { addDays } from "@/lib/calendar/logic";
 import { getRepo, scoreText } from "@/lib/data/repo";
+import { getRepo3, type Prefs } from "@/lib/data/repo3";
+import { teacherFor, teacherPrompt } from "@/lib/teachers";
+import { TeacherPicker } from "@/components/teachers/teacher-picker";
 import type { Chat, ChatMessage, Citation, VaultFile } from "@/lib/data/types";
 import { CARD_GROUPS, INTENT_CARDS, type FieldKey, type IntentCard } from "@/lib/hub/intent-cards";
 import { cn } from "@/lib/utils";
@@ -59,13 +62,15 @@ function getRecognition(): Recognition | null {
   return C ? new C() : null;
 }
 
-function speak(text: string, locale: string, onEnd: () => void) {
+function speak(text: string, locale: string, onEnd: () => void, voice = { pitch: 1, rate: 1 }) {
   const plain = text
     .replace(/\$\$?[^$]*\$\$?/g, " ")
     .replace(/\[\d+\]/g, "")
     .replace(/[#*_`>|]/g, "");
   const u = new SpeechSynthesisUtterance(plain);
   u.lang = /[؀-ۿ]/.test(plain) || locale === "ar" ? "ar-SA" : "en-US";
+  u.pitch = voice.pitch;
+  u.rate = voice.rate;
   u.onend = onEnd;
   u.onerror = onEnd;
   speechSynthesis.cancel();
@@ -95,6 +100,7 @@ export function ChatTab() {
   const [card, setCard] = useState<IntentCard | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [prefs, setPrefs] = useState<Prefs>({});
   const recRef = useRef<Recognition | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const urlCache = useRef(new Map<string, { title: string; text: string }>());
@@ -104,6 +110,7 @@ export function ChatTab() {
   useEffect(() => {
     repo.chats.list().then(setChats).catch(() => {});
     repo.files.list().then(setFiles).catch(() => {});
+    getRepo3().prefs.get().then(setPrefs).catch(() => {});
   }, [repo]);
 
   useEffect(() => {
@@ -221,6 +228,7 @@ export function ChatTab() {
             upcoming: events,
             today: new Date().toISOString().slice(0, 10),
             language: locale,
+            teacher: teacherPrompt(teacherFor(prefs, chat.subject_code)),
           },
         }),
       });
@@ -395,11 +403,27 @@ export function ChatTab() {
                     setSpeakingId(null);
                   } else {
                     setSpeakingId(m.id);
-                    speak(m.content, locale, () => setSpeakingId(null));
+                    speak(m.content, locale, () => setSpeakingId(null), teacherFor(prefs, active?.subject_code).voice);
                   }
                 }}
                 onQuiz={() => send(t("quizPrompt"))}
-                onFlashcards={() => send(INTENT_CARDS.find((c) => c.id === "flashcards")!.prompt({ topic: m.content.slice(0, 300) } as Record<FieldKey, string>))}
+                onFlashcards={async () => {
+                  // Turn this answer into a real flashcard deck (section 6.2 hand-off).
+                  const res = await fetch("/api/cards", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: m.content, count: 8, language: locale }),
+                  });
+                  const data = (await res.json().catch(() => ({}))) as { cards?: { front: string; back: string }[]; message?: string };
+                  if (!data.cards?.length) {
+                    setToast(data.message ?? t("error"));
+                    return;
+                  }
+                  const repo3 = getRepo3();
+                  const deck = await repo3.decks.create({ name: (active?.title ?? t("newChat")).slice(0, 120), subject_code: active?.subject_code ?? null, source_file_id: null });
+                  await repo3.cards.createMany(data.cards.map((c) => ({ deck_id: deck.id, ...c })));
+                  setToast(t("deckMade", { count: data.cards.length }));
+                }}
                 onCalendar={async () => {
                   const d = addDays(new Date(), 1);
                   d.setHours(8, 0, 0, 0);
@@ -468,6 +492,15 @@ export function ChatTab() {
             className="w-full resize-none bg-transparent px-2 py-1 text-base outline-none placeholder:text-muted"
           />
           <div className="flex items-center gap-2">
+            <TeacherPicker
+              prefs={prefs}
+              subjectCode={active?.subject_code}
+              subjectName={profile.enrollments.find((e) => e.subjectId === active?.subject_code)?.name}
+              onChange={(p) => {
+                setPrefs(p);
+                getRepo3().prefs.set(p).catch(() => {});
+              }}
+            />
             <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-muted" title={t("justShowMeHint")}>
               <input id="just-show-me" type="checkbox" className="size-4 accent-[var(--primary)]" checked={justShowMe} onChange={(e) => setJustShowMe(e.target.checked)} />
               {t("justShowMe")}

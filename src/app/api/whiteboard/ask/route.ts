@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
     shape: { kind: string; label?: string; text?: string } | null;
     question: string;
     language: "en" | "ar";
+    teacher?: string;
   };
   const question = (b.question ?? "").slice(0, 500).trim();
   if (!question) return NextResponse.json({ error: "no_question" }, { status: 400 });
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
     const answer = await groqText(
       ROUTES.whiteboardAsk,
       [
-        { role: "system", content: WHITEBOARD_ASK_SYSTEM },
+        { role: "system", content: `${WHITEBOARD_ASK_SYSTEM}${b.teacher ? `\n\n${String(b.teacher).slice(0, 1500)}` : ""}` },
         {
           role: "user",
           content: `Lesson: ${b.title}\nWhat you were saying: ${b.segment}\n${shape}\nReply in ${b.language === "ar" ? "Arabic" : "English"}.\nQuestion: ${question}`,

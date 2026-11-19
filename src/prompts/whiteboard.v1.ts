@@ -76,3 +76,62 @@ export const WHITEBOARD_SCHEMA = {
 
 /** Answering "what's this?" about a shape the student circled (section 7.2). Runs on Groq. */
 export const WHITEBOARD_ASK_SYSTEM = `You are the teacher at the whiteboard in Soussy Study. The student paused your lesson, circled part of the drawing and asked a question about it. Answer in 2–4 short spoken sentences about that exact part, in the student's language. Plain text only (it will be read aloud), Unicode math, no Markdown, no LaTeX. If the question is unrelated to studying, gently steer back.`;
+
+const n = { type: ["number", "null"] } as const;
+
+/** Same lesson format as a strict JSON schema for Groq (every field required; unused ones are null). */
+export const WHITEBOARD_SCHEMA_STRICT = {
+  type: "object",
+  additionalProperties: false,
+  required: ["title", "segments"],
+  properties: {
+    title: { type: "string" },
+    segments: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["say", "actions"],
+        properties: {
+          say: { type: "string" },
+          actions: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["word", "kind", "x", "y", "x2", "y2", "w", "h", "r", "points", "text", "label", "color", "size", "dashed"],
+              properties: {
+                word: { type: "integer" },
+                kind: { type: "string", enum: ["text", "line", "arrow", "rect", "circle", "curve", "highlight"] },
+                x: { type: "number" },
+                y: { type: "number" },
+                x2: n,
+                y2: n,
+                w: n,
+                h: n,
+                r: n,
+                points: { type: ["array", "null"], items: { type: "number" } },
+                text: { type: ["string", "null"] },
+                label: { type: ["string", "null"] },
+                color: { type: "string", enum: ["ink", "primary", "danger", "success", "warning", "violet", "teal"] },
+                size: { type: "string", enum: ["small", "medium", "large"] },
+                dashed: { type: "boolean" },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+} as const;
+
+/** A student's own solved problem replayed as a whiteboard lesson (section 8, "Send to whiteboard"). */
+export function solutionWhiteboardPrompt(problem: string, solution: unknown, language: "en" | "ar") {
+  return `Replay this solved problem as a whiteboard lesson: write the problem at the top, then work through the steps on the board while explaining them, and finish by boxing the answer with a highlight. Keep the same method and the same answer. Language: ${language === "ar" ? "Arabic" : "English"}.
+
+Problem:
+${problem.slice(0, 2000)}
+
+Solution (JSON):
+${JSON.stringify(solution).slice(0, 6000)}`;
+}

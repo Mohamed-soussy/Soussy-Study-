@@ -22,7 +22,11 @@ export type DataClass = "public" | "personal" | "opt-in-image";
 
 export const ROUTES = {
   /** Study Hub tutor chat: personal (the student's words and files). */
-  chat: { engine: "groq", data: "personal", models: ["openai/gpt-oss-120b", "openai/gpt-oss-20b"] },
+  chat: { engine: "groq", data: "personal", models: ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"] },
+  /** Step-by-step solver: the student's homework (personal). The strongest Groq model first. */
+  solve: { engine: "groq", data: "personal", models: ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"] },
+  /** Flashcards made from the student's files or chats: personal. */
+  cards: { engine: "groq", data: "personal", models: ["openai/gpt-oss-120b", "openai/gpt-oss-20b"] },
   /** Auto-tagging uploaded files: personal. */
   tagFile: { engine: "groq", data: "personal", models: ["openai/gpt-oss-20b", "openai/gpt-oss-120b"] },
   /** Reading text from a student's photo or handwriting: personal image. */
@@ -54,6 +58,8 @@ export class EngineError extends Error {
     public engine: Engine,
     public code: "not_configured" | "rate_limited" | "busy" | "no_credits" | "bad_request" | "timeout" | "failed",
     message: string,
+    /** Seconds the provider asked us to wait (rate limits). */
+    public retryAfter = 0,
   ) {
     super(message);
   }
@@ -65,8 +71,10 @@ export function engineConfigured(engine: Engine): boolean {
   return Boolean(process.env.HUGGINGFACE_ACCESS_TOKEN);
 }
 
-function classify(engine: Engine, status: number, body: string): EngineError {
-  if (status === 429) return new EngineError(engine, "rate_limited", "Too many requests right now.");
+function classify(engine: Engine, status: number, body: string, retryAfter = 0): EngineError {
+  if (status === 429) return new EngineError(engine, "rate_limited", "Too many requests right now.", retryAfter);
+  // Groq occasionally rejects its own output against a strict schema: worth another try.
+  if (/does not match the expected schema|failed_generation|json_validate_failed/i.test(body)) return new EngineError(engine, "busy", "The model's answer was malformed.");
   if (status === 503 || status === 500 || status === 502) return new EngineError(engine, "busy", "The model is busy.");
   if (status === 402 || /credits|purchase/i.test(body)) return new EngineError(engine, "no_credits", "No credits left on this account.");
   if (status === 400 || status === 404) return new EngineError(engine, "bad_request", body.slice(0, 300));
@@ -81,7 +89,7 @@ async function post(engine: Engine, url: string, headers: Record<string, string>
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(timeoutMs),
     });
-    if (!res.ok) throw classify(engine, res.status, await res.text().catch(() => ""));
+    if (!res.ok) throw classify(engine, res.status, await res.text().catch(() => ""), Number(res.headers.get("retry-after")) || 0);
     return res;
   } catch (err) {
     if (err instanceof EngineError) throw err;
@@ -92,16 +100,25 @@ async function post(engine: Engine, url: string, headers: Record<string, string>
   }
 }
 
-/** Tries each model in order; moves on when one is busy, rate limited or slow. */
+/**
+ * Tries each model in order; moves on when one is busy, rate limited or slow.
+ * If every model is rate limited, waits once (up to 30 s, as the provider asks) and tries again.
+ */
 async function withFallback<T>(models: readonly string[], run: (model: string) => Promise<T>): Promise<T> {
   let last: unknown;
-  for (const m of models) {
-    try {
-      return await run(m);
-    } catch (err) {
-      last = err;
-      if (err instanceof EngineError && !["busy", "rate_limited", "timeout"].includes(err.code)) throw err;
+  for (let round = 0; round < 2; round++) {
+    let wait = 0;
+    for (const m of models) {
+      try {
+        return await run(m);
+      } catch (err) {
+        last = err;
+        if (!(err instanceof EngineError) || !["busy", "rate_limited", "timeout"].includes(err.code)) throw err;
+        if (err.code === "rate_limited") wait = Math.max(wait, err.retryAfter || 3);
+      }
     }
+    if (!wait || wait > 30) break;
+    await new Promise((r) => setTimeout(r, wait * 1000 + 250));
   }
   throw last;
 }
@@ -187,10 +204,21 @@ function groqKey() {
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
+/**
+ * Groq's free tier reserves max_completion_tokens against an 8,000-tokens-per-minute
+ * budget per model, so every call asks only for what it needs, keeps reasoning short
+ * and doesn't send the reasoning text back.
+ */
+function groqExtras(model: string, effort: "low" | "medium" = "low") {
+  if (model.startsWith("openai/gpt-oss")) return { reasoning_effort: effort, include_reasoning: false };
+  if (model.startsWith("qwen/")) return { reasoning_format: "hidden" };
+  return {};
+}
+
 /** Structured JSON from Groq (strict JSON schema). */
 export async function groqJSON<T>(
   route: { engine: "groq"; models: readonly string[] },
-  args: { messages: GroqMessage[]; schema: Record<string, unknown>; name: string; maxTokens?: number },
+  args: { messages: GroqMessage[]; schema: Record<string, unknown>; name: string; maxTokens?: number; effort?: "low" | "medium" },
 ): Promise<T> {
   const key = groqKey();
   return withFallback(route.models, async (model) => {
@@ -201,7 +229,8 @@ export async function groqJSON<T>(
       {
         model,
         messages: args.messages,
-        max_completion_tokens: args.maxTokens ?? 4000,
+        max_completion_tokens: args.maxTokens ?? 2000,
+        ...groqExtras(model, args.effort),
         response_format: { type: "json_schema", json_schema: { name: args.name, strict: true, schema: args.schema } },
       },
       45000,
@@ -216,20 +245,20 @@ export async function groqJSON<T>(
 }
 
 /** Plain text from Groq (used for reading images). */
-export async function groqText(route: { engine: "groq"; models: readonly string[] }, messages: GroqMessage[], maxTokens = 4000): Promise<string> {
+export async function groqText(route: { engine: "groq"; models: readonly string[] }, messages: GroqMessage[], maxTokens = 1500): Promise<string> {
   const key = groqKey();
   return withFallback(route.models, async (model) => {
-    const res = await post("groq", GROQ_URL, { Authorization: `Bearer ${key}` }, { model, messages, max_completion_tokens: maxTokens }, 60000);
+    const res = await post("groq", GROQ_URL, { Authorization: `Bearer ${key}` }, { model, messages, max_completion_tokens: maxTokens, ...groqExtras(model) }, 60000);
     const data = (await res.json()) as { choices: { message: { content: string } }[] };
     return (data.choices[0]?.message?.content ?? "").replace(/<think>[\s\S]*?<\/think>/g, "").trim();
   });
 }
 
 /** Streams text deltas from Groq (server-sent events). */
-export async function* groqStream(route: { engine: "groq"; models: readonly string[] }, messages: GroqMessage[], maxTokens = 4000): AsyncGenerator<string> {
+export async function* groqStream(route: { engine: "groq"; models: readonly string[] }, messages: GroqMessage[], maxTokens = 1500): AsyncGenerator<string> {
   const key = groqKey();
   const res = await withFallback(route.models, (model) =>
-    post("groq", GROQ_URL, { Authorization: `Bearer ${key}` }, { model, messages, stream: true, max_completion_tokens: maxTokens }, 60000),
+    post("groq", GROQ_URL, { Authorization: `Bearer ${key}` }, { model, messages, stream: true, max_completion_tokens: maxTokens, ...groqExtras(model) }, 60000),
   );
   const reader = res.body!.getReader();
   const dec = new TextDecoder();

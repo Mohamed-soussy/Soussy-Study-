@@ -70,7 +70,7 @@ export interface Repo {
 
 /* ---------------- live (Supabase) ---------------- */
 
-function check<T>(res: { data: T | null; error: { message: string } | null }): T {
+export function check<T>(res: { data: T | null; error: { message: string } | null }): T {
   if (res.error) throw new Error(res.error.message);
   return res.data as T;
 }
@@ -189,14 +189,14 @@ function liveRepo(sb: SupabaseClient): Repo {
 
 const KEY = (t: string) => `soussy.demo.${t}`;
 
-function load<T>(table: string): T[] {
+export function load<T>(table: string): T[] {
   try {
     return JSON.parse(localStorage.getItem(KEY(table)) ?? "[]") as T[];
   } catch {
     return [];
   }
 }
-function save<T>(table: string, rows: T[]) {
+export function save<T>(table: string, rows: T[]) {
   try {
     localStorage.setItem(KEY(table), JSON.stringify(rows));
   } catch {
@@ -204,7 +204,7 @@ function save<T>(table: string, rows: T[]) {
   }
 }
 
-function table<T extends { id: string }>(name: string) {
+export function table<T extends { id: string }>(name: string) {
   return {
     all: () => load<T>(name),
     insert: (row: T) => {

@@ -2,7 +2,7 @@
 
 import "pdfjs-dist/web/pdf_viewer.css"; // official text-layer sizing, so selections line up with the page
 
-import { ArrowLeft, ChevronLeft, ChevronRight, Highlighter, Loader2, MessageSquarePlus, Sparkles, Trash2, ZoomIn, ZoomOut } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Highlighter, Layers, Loader2, MessageSquarePlus, Sparkles, Trash2, ZoomIn, ZoomOut } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -171,10 +171,16 @@ function FileViewer() {
             </div>
           )}
         </div>
-        <Button onClick={() => router.push(`/hub?tab=chat&file=${file.id}&page=${page}`)}>
-          <Sparkles aria-hidden />
-          {t("askAi")}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => router.push(`/flashcards?file=${file.id}`)}>
+            <Layers aria-hidden />
+            {hub("makeFlashcards")}
+          </Button>
+          <Button onClick={() => router.push(`/hub?tab=chat&file=${file.id}&page=${page}`)}>
+            <Sparkles aria-hidden />
+            {t("askAi")}
+          </Button>
+        </div>
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">

@@ -68,7 +68,7 @@ async function aiReadImage(buf: Buffer, mime: string): Promise<string[] | null> 
         ],
       },
     ],
-    4000,
+    2000,
   );
   return [text];
 }

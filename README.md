@@ -7,6 +7,7 @@ Built phase by phase from the Master Build Prompt (section 16). Done so far:
 
 - **Phase 1 — Foundation:** design system, logo, sign-in, onboarding, app shell, dashboard, English and Arabic.
 - **Phase 2 — Calendar + Study Hub:** smart calendar, file vault, AI tutor with citations, intent cards.
+- **Phase 3 — Solver, flashcards, timer, teachers, split screen, devices:** see below.
 
 ## Run it
 
@@ -20,7 +21,7 @@ everything works, but it's saved only in that browser.
 
 ## Connect Supabase (real accounts)
 
-1. In Supabase, open **SQL Editor** and run each file in `supabase/migrations/` in order (`0001_…`, then `0002_…`).
+1. In Supabase, open **SQL Editor** and run each file in `supabase/migrations/` in order (`0001_…` to `0004_…`).
 2. Copy **Project Settings → API → anon public key** into `.env.local` as `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    (see `.env.example` for every setting, including the AI keys).
 3. In **Authentication → URL Configuration**, add `http://localhost:3000/auth/callback`
@@ -68,6 +69,24 @@ change speed, captions-only mode, and **interrupt and ask**: pause, tap or circl
   sensitivity, "That was wrong").
 - **Cloud checks (opt-in, off by default):** a 256 px JPEG every 2 minutes to Gemini after a clear warning that
   Google may use it. Rate-limited on the server (1 a minute, 300 a day).
+
+## What's in Phase 3
+
+| Area | Where |
+| --- | --- |
+| Solver: type (math keyboard + preview), photo, paste, file; steps, hint mode, "Why this step?", graph, calculator help, mark scheme, try a similar one, mistake log, send to whiteboard | `src/app/(app)/solver/`, `src/app/api/solve/`, `src/prompts/solver.v1.ts` |
+| **Verified badge**: every answer re-checked by mathjs (equations, systems, units, derivatives, integrals, limits). Failed check → automatic re-solve → else "Uncertain". 20/20 test problems verified. | `src/lib/solver/verify.ts` |
+| Flashcards with FSRS (ts-fsrs): decks from files, chats or by hand; flip, type, multiple choice, match game | `src/app/(app)/flashcards/`, `src/lib/flashcards/fsrs.ts`, `src/app/api/cards/` |
+| Timer bubble: plan from Today's plan, break bank, warnings at 2 min / 100% / 150%, emergency pause, pop-out window, end summary + explain-back | `src/components/session/bubble.tsx`, `src/lib/session/store.ts` |
+| AI teachers: Ms. Noor, Zed, Mr. Hadid, Coach Rami, Professor Layla, The Examiner, build your own; per subject; own voice | `src/lib/teachers.ts`, `src/components/teachers/` |
+| Split screen: any two tools, drag to a side, resize, saved layouts, swipe on phones | `src/app/(app)/workspace/` |
+| Linked devices: 6-digit code / QR, same account only, max 3, shared session, send to device, remote, scanner, desk camera, audio device | `src/lib/devices/sync.ts`, `src/components/devices/`, `src/app/(app)/remote|scan|link/` |
+| Notes: typed + handwriting pad | `src/app/(app)/notes/` |
+| Database: solutions, mistakes, flashcards (+ reviews), devices, link codes, prefs, private realtime channel | `supabase/migrations/0004_phase3.sql` |
+
+**Groq free-tier limits:** 8,000 tokens per minute per model (about 2 solutions a minute per model, ~6 across the three
+models we rotate through) and 1,000 requests a day per model. The app waits and retries when a model is busy, but a
+whole class at once needs Groq's paid Developer tier.
 
 ## What's in Phase 2
 
