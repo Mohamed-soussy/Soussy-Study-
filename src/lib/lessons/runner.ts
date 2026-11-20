@@ -13,6 +13,7 @@ import { sampleSlides } from "./frames";
 import { getRepo5 } from "./repo";
 import { parseDocxTranscript, parseVtt } from "./transcript-files";
 import { KIND_TO_TYPE, mediaKey, slideKey, type Chapter, type KeyPoint, type Lesson, type LessonItem, type Segment, type Slide } from "./types";
+import { awardXp } from "@/lib/progress/xp";
 
 /**
  * The lesson analyzer pipeline (section 11.2), run in the browser so long files never
@@ -422,6 +423,7 @@ export async function runLesson(opts: StartOptions): Promise<void> {
 
     await repo5.lessons.update(id, { status: "ready", error: null, items, key_points: keyPoints, chapters, summary, duration_s: duration || null });
     set(id, { stage: "done", done: 1, total: 1, eta: 0 });
+    void awardXp("lesson", 30, id);
     notify("Your lesson is ready", `${lesson.title}: ${items.length} item${items.length === 1 ? "" : "s"} found`);
   } catch (err) {
     const message = err instanceof StepError ? err.message : "Something went wrong while analyzing this lesson.";

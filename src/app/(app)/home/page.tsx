@@ -12,6 +12,8 @@ import { addDays, occurrences, sameDay, startOfDay } from "@/lib/calendar/logic"
 import { eventColor, intlLocale, TYPE_STYLE } from "@/lib/calendar/style";
 import { useEvents } from "@/lib/calendar/use-events";
 import { SchoolInbox } from "@/components/school/inbox";
+import { BalanceCheck, WeeklyReport } from "@/components/progress/weekly";
+import { loadProgress, type Progress } from "@/lib/progress/stats";
 import { daysUntil } from "@/lib/profile/types";
 import { cn, subjectColor } from "@/lib/utils";
 
@@ -58,6 +60,10 @@ export default function HomePage() {
   const greeting = t(greetingKey(new Date().getHours()), { name: firstName });
   const locale = useLocale();
   const { events, update, reload } = useEvents();
+  const [progress, setProgress] = useState<Progress | null>(null);
+  useEffect(() => {
+    loadProgress().then(setProgress).catch(() => {});
+  }, []);
   const today = startOfDay(new Date());
   const week = useMemo(() => occurrences(events, today, addDays(today, 7)), [events]); // eslint-disable-line react-hooks/exhaustive-deps
   const plan = week.filter((o) => sameDay(o.start, today) && o.event.type !== "class");
@@ -110,6 +116,7 @@ export default function HomePage() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex min-w-0 flex-col gap-6">
+          <BalanceCheck events={events} />
           <SchoolInbox events={events} enrollments={profile.enrollments} onChanged={reload} />
           <section aria-labelledby="plan-title" className="flex flex-col gap-3">
             <h2 id="plan-title" className="text-lg font-semibold">
@@ -215,10 +222,13 @@ export default function HomePage() {
               {t("progressTitle")}
             </h2>
             <Card className="flex flex-col gap-4 p-4">
-              <p className="flex items-center gap-2 font-semibold text-text">
-                <Flame className="size-5 text-warning" aria-hidden />
-                {t("streak", { days: 0 })}
-              </p>
+              <Link href="/progress" className="flex items-center justify-between gap-2 font-semibold text-text hover:text-primary">
+                <span className="flex items-center gap-2">
+                  <Flame className="size-5 text-warning" aria-hidden />
+                  {t("streak", { days: progress?.streak.streak ?? 0 })}
+                </span>
+                {progress && <span className="text-sm font-medium text-muted">{t("level", { n: progress.level.level })}</span>}
+              </Link>
               <div className="flex flex-col gap-1.5">
                 <div className="h-2 overflow-hidden rounded-full bg-surface-2">
                   <div className="h-full rounded-full bg-success" style={{ width: `${Math.min(100, (weekMinutes / goalMinutes) * 100)}%` }} />
@@ -227,6 +237,7 @@ export default function HomePage() {
               </div>
             </Card>
           </section>
+          <WeeklyReport events={events} compact />
         </aside>
       </div>
     </>

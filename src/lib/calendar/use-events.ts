@@ -40,6 +40,8 @@ export function useEvents() {
   }, []);
 
   const update = useCallback(async (id: string, patch: Partial<CalendarEvent>) => {
+    // Ticking off a task earns points once (section 12.4).
+    if (patch.status === "done") void import("@/lib/progress/xp").then((m) => m.awardXp("task", 10, id));
     setEvents((list) => list.map((e) => (e.id === id ? { ...e, ...patch } : e)));
     try {
       await getRepo().events.update(id, patch);

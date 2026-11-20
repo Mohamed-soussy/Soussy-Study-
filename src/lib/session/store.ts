@@ -234,6 +234,16 @@ function logMinutes(min: number) {
   }
 }
 
+/** Verified study time, per subject, for streaks and leaderboards (section 12B). */
+async function logProgress(s: SessionState, units: Unit[]) {
+  const { recordSession } = await import("@/lib/progress/study");
+  await recordSession({
+    focusedMinutes: s.focusedMs / 60000,
+    focusPct: focusScore(s),
+    units: units.map((u) => ({ subject: u.subject, minutes: u.actualMs / 60000, done: u.done })),
+  });
+}
+
 export const session = {
   start(units: Omit<Unit, "id" | "actualMs" | "done">[], breakBankMinutes = 0) {
     const now = serverNow();
@@ -286,6 +296,7 @@ export const session = {
     const units = settled.units.map((u, i) => (i === s.index ? { ...u, actualMs: settled.unitAccumMs, done: true } : u));
     if (s.index + 1 >= units.length) {
       logMinutes(settled.focusedMs / 60000);
+      void logProgress(settled, units);
       commit({ ...settled, units, status: "done", finishedAt: now });
       return;
     }
@@ -306,6 +317,7 @@ export const session = {
     const settled = settle(s, now);
     const units = settled.units.map((u, i) => (i === s.index ? { ...u, actualMs: settled.unitAccumMs, done: true } : u));
     logMinutes(settled.focusedMs / 60000);
+    void logProgress(settled, units);
     commit({ ...settled, units, status: "done", finishedAt: now });
   },
   clear() {

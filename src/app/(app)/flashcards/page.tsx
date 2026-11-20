@@ -14,6 +14,8 @@ import { getRepo3, type CardRow, type Deck } from "@/lib/data/repo3";
 import type { VaultFile } from "@/lib/data/types";
 import { isDue, review, untilLabel, type Grade } from "@/lib/flashcards/fsrs";
 import { cn, subjectColor } from "@/lib/utils";
+import { recordStudy } from "@/lib/progress/study";
+import { awardXp } from "@/lib/progress/xp";
 
 /** Flashcards with spaced repetition (section 12.1). */
 function FlashcardsPage() {
@@ -69,6 +71,9 @@ function FlashcardsPage() {
     setCards((l) => l.map((c) => (c.id === card.id ? { ...c, ...patch } : c)));
     await repo3.cards.update(card.id, patch);
     await repo3.reviews.create(log);
+    // Practice counts toward progress: "good" or "easy" is a correct answer (section 12B).
+    void recordStudy({ questions: 1, correct: grade >= 3 ? 1 : 0 });
+    void awardXp("cards", 2, `${card.id}:${log.reviewed_at ?? Date.now()}`);
     if (grade === 1) {
       await repo3.mistakes.create({ source: "flashcards", subject: deck?.subject_code ?? null, topic: deck?.name ?? null, question: card.front, given: null, correct: card.back });
     }

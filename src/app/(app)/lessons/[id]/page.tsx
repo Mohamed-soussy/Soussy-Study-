@@ -24,16 +24,27 @@ import { clock } from "@/lib/school/dates";
 import { similarity } from "@/lib/school/match";
 import { cn, subjectColor } from "@/lib/utils";
 import type { QuizQuestion } from "@/prompts/lesson.v1";
+import { recordStudy } from "@/lib/progress/study";
+import { saveAttempt } from "@/lib/progress/stats";
+import { awardXp } from "@/lib/progress/xp";
 
 type Tab = "transcript" | "summary" | "chat" | "quiz";
 
 /* ---------------- quiz ---------------- */
 
-function Quiz({ questions, onSeek }: { questions: QuizQuestion[]; onSeek: (s: number) => void }) {
+function Quiz({ questions, onSeek, subjectCode, unit }: { questions: QuizQuestion[]; onSeek: (s: number) => void; subjectCode: string | null; unit: string }) {
   const t = useTranslations("lessons.quiz");
   const [picked, setPicked] = useState<Record<number, number>>({});
   const score = questions.filter((q, i) => picked[i] === q.answer).length;
   const answered = Object.keys(picked).length;
+  const recorded = useRef(false);
+  useEffect(() => {
+    if (answered !== questions.length || recorded.current) return;
+    recorded.current = true;
+    void recordStudy({ questions: questions.length, correct: score });
+    void saveAttempt({ kind: "lesson", subject_code: subjectCode, unit: unit, score, total: questions.length, data: {} });
+    void awardXp("quiz", score * 3, `quiz:${Date.now()}`);
+  }, [answered, questions.length, score, subjectCode, unit]);
   return (
     <div className="flex flex-col gap-4">
       {questions.map((q, i) => (
@@ -630,7 +641,7 @@ function LessonPage() {
           )}
           {tab === "quiz" && quiz && (
             <div className="max-h-[70dvh] overflow-y-auto p-4">
-              <Quiz questions={quiz} onSeek={seek} />
+              <Quiz questions={quiz} onSeek={seek} subjectCode={lesson.subject_code} unit={lesson.title} />
             </div>
           )}
         </Card>

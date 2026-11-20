@@ -19,6 +19,7 @@ import type { VaultFile } from "@/lib/data/types";
 import type { SimilarProblem, SolveResponse } from "@/lib/solver/types";
 import { sameAnswer } from "@/lib/solver/verify";
 import { cn } from "@/lib/utils";
+import { awardXp } from "@/lib/progress/xp";
 
 /** Renders LaTeX (display or inline); falls back to plain text. */
 function Tex({ math, block }: { math: string; block?: boolean }) {
@@ -202,6 +203,7 @@ export default function SolverPage() {
         verification: data.verification,
       });
       setHistory((h) => [saved, ...h].slice(0, 30));
+      void awardXp("solver", 5, saved.id);
     } catch (err) {
       setError(t("error", { message: err instanceof Error ? err.message : "?" }));
     } finally {
