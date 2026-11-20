@@ -212,7 +212,7 @@ export default function FocusPage() {
     [],
   );
 
-  // Check one frame every 2.5 s; the frame is analysed in memory and dropped.
+  // Check one frame every second; the frame is analysed in memory and dropped.
   useEffect(() => {
     if (camState !== "on") return;
     const id = setInterval(() => {
@@ -227,7 +227,7 @@ export default function FocusPage() {
         rulesRef.current = r.state;
         handleEvents(r.events);
       }
-    }, 2500);
+    }, 1000);
     return () => clearInterval(id);
   }, [camState, prefs.sensitivity, handleEvents]);
 
@@ -535,6 +535,11 @@ export default function FocusPage() {
             ) : (
               <>
                 {!prefs.preview && camState === "on" && signalLabel && <Chip>{signalLabel}</Chip>}
+                {camState === "on" && signals?.phone && (
+                  <p role="status" className="rounded-[10px] bg-warning/15 p-2 text-sm font-medium text-text">
+                    {mode === "focus" ? cam("phoneSpotted") : cam("phoneSpottedIdle")}
+                  </p>
+                )}
                 {camState === "loading" && <p className="text-sm text-muted">{cam("loading")}</p>}
                 {camState === "denied" && <p className="text-sm text-danger">{cam("denied")}</p>}
                 {camState === "unsupported" && <p className="text-sm text-danger">{cam("unsupported")}</p>}

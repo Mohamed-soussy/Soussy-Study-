@@ -27,7 +27,7 @@ export async function createDetector(): Promise<Detector> {
     const objects = await vision.ObjectDetector.createFromOptions(fileset, {
       baseOptions: { modelAssetPath: "/mediapipe/models/efficientdet_lite0.tflite", delegate },
       runningMode: "VIDEO",
-      scoreThreshold: 0.35,
+      scoreThreshold: 0.3,
       maxResults: 3,
       categoryAllowlist: ["cell phone"],
     });

@@ -40,6 +40,10 @@ export function initialRuleState(now: number): RuleState {
 
 const FACTOR: Record<Sensitivity, number> = { relaxed: 1.5, normal: 1, strict: 0.7 };
 const CHECK_IN_COOLDOWN = 10 * 60 * 1000;
+/** A phone check-in can come back sooner than the others: 3 minutes. */
+const PHONE_COOLDOWN = 3 * 60 * 1000;
+/** How long a phone must be in view (within the last minute) before we check in. */
+const PHONE_MS = 20_000;
 
 /**
  * Adds one sample and returns the events to show. `activeRecently` = the student
@@ -94,9 +98,9 @@ export function step(
     lastCheckIn = now;
   }
 
-  // Phone: only when it runs long (~3 of the last 10 minutes) AND there's no progress in the app.
-  const phoneMs = timeWith(samples, (x) => x.phone);
-  if (phoneMs >= 180_000 * f && !activeRecently && canCheckIn && !events.some((e) => e === "lookAway" || e === "tired")) {
+  // Phone: in view for ~20 s of the last minute (relaxed 30 s, strict 14 s) → a friendly check-in.
+  const phoneMs = timeWith(samples.filter((x) => now - x.t <= 60_000), (x) => x.phone);
+  if (phoneMs >= PHONE_MS * f && now - lastCheckIn >= PHONE_COOLDOWN && !events.some((e) => e === "lookAway" || e === "tired")) {
     events.push("phone");
     lastCheckIn = now;
   }

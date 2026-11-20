@@ -851,7 +851,9 @@
       "cloudOn": "Cloud checks on",
       "cloudOff": "Cloud checks off",
       "cloudLast": "Last cloud check: {state}",
-      "under18": "You're under 18. Ask a parent or guardian before turning on cloud checks."
+      "under18": "You're under 18. Ask a parent or guardian before turning on cloud checks.",
+      "phoneSpotted": "📱 Phone spotted. Put it away; if it stays out for about 20 seconds I'll check in with you.",
+      "phoneSpottedIdle": "📱 Phone spotted. The camera check is working. Start a focus session and I'll check in if it stays out."
     },
     "signals": {
       "present": "At your desk",
