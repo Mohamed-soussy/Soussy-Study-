@@ -312,7 +312,9 @@
     "notes": "Notes",
     "moderate": "Moderation",
     "progress": "Progress",
-    "exam": "Practice"
+    "exam": "Practice",
+    "rooms": "Study rooms",
+    "teach": "Classes"
   },
   "home": {
     "morning": "Good morning, {name}.",
@@ -371,7 +373,52 @@
     "privacyLater": "Arrives in phase 7.",
     "accountMode": "Account",
     "accountDemo": "Demo mode: saved in this browser only.",
-    "accountLive": "Signed in. Your data is saved to your account."
+    "accountLive": "Signed in. Your data is saved to your account.",
+    "a11y": {
+      "title": "Accessibility",
+      "font": "Easy-to-read font",
+      "fontText": "Atkinson Hyperlegible, designed for low vision and dyslexia (Latin text).",
+      "size": "Text size: {n}%",
+      "motion": "Reduce motion",
+      "readAloud": "Read aloud: select text and tap the speaker in the top bar (or it reads the page). The whiteboard and lessons have captions."
+    },
+    "invite": {
+      "title": "Invite friends",
+      "text": "Share your link: when a friend joins, you both get 10 extra AI uses a day (up to 50).",
+      "link": "Your invite link",
+      "copy": "Copy",
+      "make": "Make my invite link",
+      "haveCode": "Friend's code",
+      "redeem": "Use code",
+      "redeemed": "Done! You both got 10 extra AI uses a day.",
+      "notRedeemed": "That code can't be used (wrong code, your own, or you've used one already)."
+    },
+    "parent": {
+      "title": "Parent view",
+      "text": "Optional: a private link to a read-only weekly summary (study time, tasks done, upcoming tests). Never files, chats, recordings or grades. You can switch it off any time.",
+      "needsAccounts": "Needs real accounts (not demo mode).",
+      "link": "Parent link",
+      "copy": "Copy",
+      "on": "Make a parent link",
+      "off": "Turn the link off"
+    },
+    "privacyCard": {
+      "text": "Your data is yours. Download everything we store about you, or delete your account and all of it.",
+      "download": "Download all my data",
+      "delete": "Delete my account",
+      "deleteText": "This deletes your account, files, lessons, notes, connections and tokens straight away. It can't be undone. Type DELETE to confirm.",
+      "typeDelete": "Type DELETE",
+      "deleteForever": "Delete forever",
+      "failed": "Couldn't delete the account.",
+      "connected": "Connected apps are listed under Connections above; disconnecting deletes their tokens."
+    },
+    "demoRole": {
+      "label": "Demo: view as",
+      "student": "Student",
+      "teacher": "Teacher",
+      "moderator": "Moderator",
+      "note": "Only in demo mode. Real roles are set by the school or a moderator."
+    }
   },
   "calendar": {
     "title": "Calendar",
@@ -991,7 +1038,8 @@
       "notes": "Notes",
       "focus": "Focus room"
     },
-    "openSplit": "Open in split screen"
+    "openSplit": "Open in split screen",
+    "readAloud": "Read aloud (selected text or the page)"
   },
   "remote": {
     "title": "Remote",
@@ -1229,6 +1277,23 @@
         "text": "Upload a class recording or Teams transcript to catch homework the teacher only said out loud.",
         "go": "Open Lessons"
       }
+    },
+    "kis": {
+      "eyebrow": "For Khalid International Schools (KiS), Riyadh",
+      "title": "Soussy Study, set up for KiS",
+      "text": "Your school and curricula are already filled in. Sign up and you're studying in about a minute.",
+      "ibTitle": "IB Diploma",
+      "ibText": "All DP subjects with HL/SL, TOK, EE and CAS workspaces.",
+      "usTitle": "American high school",
+      "usText": "Honors and AP courses, GPA, SAT/ACT and college deadlines.",
+      "points": {
+        "teams": "Connect Microsoft Teams: assignments land on your calendar.",
+        "lessons": "Analyze class recordings for homework said out loud.",
+        "rooms": "School-only study rooms, cameras only.",
+        "free": "Free for every student. No ads."
+      },
+      "start": "Start with KiS",
+      "note": "Made by a KiS student as an IB CAS project. Not an official school service."
     }
   },
   "vault": {
@@ -1777,5 +1842,237 @@
         "decision": "Decision received"
       }
     }
+  },
+  "rooms": {
+    "title": "Study rooms",
+    "text": "Study \"together\" on camera to stay locked in. Cameras only: no microphones, no chat, no links.",
+    "block": {
+      "no_age": {
+        "title": "Add your birthday first",
+        "text": "Rooms are grouped by age (13–15, 16–17, 18+), so we need your date of birth."
+      },
+      "too_young": {
+        "title": "Rooms are for 13 and up",
+        "text": "You can still use the timer, camera focus mode and Squads with friends."
+      },
+      "needs_guardian": {
+        "title": "A parent or guardian needs to agree",
+        "text": "Because rooms use cameras, students under 18 need a parent or guardian to say yes first. Make a link and send it to them; it takes them one tap."
+      },
+      "banned": {
+        "title": "You can't join rooms right now",
+        "text": "A moderator paused your room access after a report. It ends automatically; contact your school if you think it's a mistake."
+      },
+      "unavailable": {
+        "title": "Rooms aren't set up yet",
+        "text": "Run migration 0007 in Supabase to turn on study rooms."
+      },
+      "signed_out": {
+        "title": "Sign in first",
+        "text": "Rooms need an account."
+      }
+    },
+    "addBirthday": "Add my birthday",
+    "makeGuardianLink": "Make an approval link",
+    "guardianLink": "Approval link",
+    "copy": "Copy",
+    "guardianNote": "The link only lets your guardian approve rooms; it doesn't open your account.",
+    "demoApprove": "Demo: pretend a guardian approved",
+    "rulesTitle": "Room rules",
+    "rulesText": "Live cameras between students need strict rules. Tick each one to agree.",
+    "rules": {
+      "dressed": "I'll be dressed appropriately.",
+      "substances": "No smoking, vaping, drugs or alcohol.",
+      "weapons": "No weapons.",
+      "gestures": "No rude gestures, signs or offensive symbols.",
+      "nudity": "No nudity or sexual content of any kind.",
+      "personal": "I won't show personal information (address, phone number, ID cards).",
+      "camera": "My camera stays on me or my desk.",
+      "record": "I'll never record or screenshot others."
+    },
+    "agree": "I agree",
+    "consequences": "Breaking a rule: 1st time a 24-hour ban, 2nd time 7 days, 3rd time permanent. Sexual content involving a minor is a permanent ban at once and is reported to the authorities.",
+    "camera": "Camera view",
+    "views": {
+      "blur": "Background blur (recommended)",
+      "desk": "Desk view (hands and notebook)"
+    },
+    "viewsNote": "Others see a small picture that updates every 10 seconds. It's checked on your device before it's sent, and never stored.",
+    "schoolRooms": "School rooms",
+    "schoolRoomText": "{school} · ages {band}",
+    "noSchool": "Add your school to see school rooms",
+    "noSchoolText": "Settings → Edit profile → School.",
+    "friendsTitle": "Friends room",
+    "friendsText": "A private room for you and friends (same age group), by invite code.",
+    "newFriends": "New friends room",
+    "code": "Code",
+    "join": "Join",
+    "friendsRoom": "Friends room {code}",
+    "openTitle": "Open rooms (later)",
+    "openText": "Rooms between schools open after the KiS pilot, once school rooms have run safely for a month.",
+    "people": "{n} / {max}",
+    "mute": "Mute cheers",
+    "unmute": "Unmute cheers",
+    "leave": "Leave",
+    "you": "you",
+    "student": "Student",
+    "tileOf": "{nick}'s camera",
+    "cheer": "Cheer",
+    "report": "Report",
+    "presets": {
+      "keepGoing": "Keep going!",
+      "youCan": "You can do it!",
+      "backToTask": "Back to your task 👀",
+      "niceStreak": "Nice focus streak!",
+      "breakSoon": "Break soon, hang in there",
+      "goodLuck": "Good luck on your test!"
+    },
+    "reasons": {
+      "nudity": "Nudity or sexual content",
+      "smoking": "Smoking, vaping, drugs or alcohol",
+      "weapons": "Weapons or violence",
+      "gesture": "Rude gesture or symbol",
+      "personal": "Showing personal information",
+      "bullying": "Bullying",
+      "other": "Something else"
+    },
+    "alone": "You're the first here. Others will appear as they join.",
+    "privacy": "Microphone never used. Pictures are checked on your device, spot-checked by an AI moderator about once a minute, and not stored. Rooms close after 3 hours.",
+    "removed": "Your camera was stopped because something in the picture may break the room rules. A moderator will look at it.",
+    "closed": "Rooms close after 3 hours. Take a real break!",
+    "full": "That room is full (9 people). Try another.",
+    "cameraError": "Couldn't start the camera. Check your browser's camera permission."
+  },
+  "squads": {
+    "title": "Squads",
+    "text": "Invite-only study groups of up to 8: chat, shared deadlines, links and quiz battles.",
+    "demo": "Demo mode: you're the only member in this browser.",
+    "create": "Start a squad",
+    "name": "Squad name",
+    "namePlaceholder": "e.g. Physics HL crew",
+    "createButton": "Create",
+    "join": "Join with a code",
+    "code": "6-letter code",
+    "joinButton": "Join",
+    "joinFailed": "Couldn't join.",
+    "mine": "Your squads",
+    "empty": "No squads yet",
+    "emptyText": "Start one and share its code with up to 7 friends.",
+    "safety": "Squads are invite-only. Messages are checked by AI before they're posted, and you can report anything.",
+    "members": "{n, plural, one {# member} other {# members}}",
+    "copyCode": "Copy code",
+    "delete": "Delete squad",
+    "leave": "Leave",
+    "deleteConfirm": "Delete this squad for everyone?",
+    "leaveConfirm": "Leave this squad?",
+    "notMember": "You're not in this squad.",
+    "back": "Back to Squads",
+    "tabs": {
+      "chat": "Chat",
+      "shared": "Shared",
+      "battle": "Quiz battle"
+    },
+    "report": "Report",
+    "reported": "Thanks. A moderator will look at it.",
+    "noMessages": "No messages yet.",
+    "messagePlaceholder": "Message your squad",
+    "send": "Send",
+    "chatRules": "Be kind. No personal info, links or answer-selling. Messages are checked before they're posted.",
+    "blocked": {
+      "bullying": "That message looks unkind, so it wasn't sent.",
+      "sexual": "That message wasn't sent.",
+      "hate": "That message wasn't sent.",
+      "self_harm": "That message wasn't sent. If you're struggling, please talk to someone you trust or your school counselor.",
+      "cheating": "Selling or sharing answers isn't allowed here.",
+      "personal": "Phone numbers, emails and links can't be shared in Squads.",
+      "spam": "That message wasn't sent."
+    },
+    "shared": {
+      "kind": "Type",
+      "kinds": {
+        "deadline": "Deadline",
+        "link": "Link",
+        "whiteboard": "Whiteboard topic"
+      },
+      "title": "Title",
+      "topic": "Topic to learn together",
+      "date": "Date",
+      "add": "Add",
+      "httpsOnly": "Links must start with https://",
+      "added": "Added to your calendar.",
+      "toCalendar": "Add to my calendar",
+      "open": "Open",
+      "remove": "Remove",
+      "empty": "Nothing shared yet.",
+      "whiteboardNote": "Whiteboard lessons are shared: everyone who opens the same topic gets the same lesson."
+    },
+    "battle": {
+      "intro": "Pick a topic and everyone in the squad gets the same 8 questions. Fastest correct answers win.",
+      "topic": "Topic, e.g. stoichiometry",
+      "start": "Start a battle",
+      "failed": "Couldn't make the questions.",
+      "progress": "Question {n} of {total} · {host}'s battle on {topic}",
+      "results": "Results: {topic}",
+      "scoreLine": "{score}/{total} · {s} s"
+    }
+  },
+  "teach": {
+    "titleTeacher": "Teacher mode",
+    "titleStudent": "My classes",
+    "textTeacher": "Post resources to your classes, see anonymous class-wide weak topics, verify community notes and record lessons.",
+    "textStudent": "Join your teacher's class with its code to see what they post.",
+    "demo": "Demo: teacher tools shown for preview.",
+    "verifyNotes": "Verify community notes",
+    "recordLesson": "Record a lesson",
+    "newClass": "New class",
+    "className": "Class name, e.g. Physics HL 11B",
+    "subject": "Subject",
+    "anySubject": "Any subject",
+    "create": "Create",
+    "students": "{n, plural, one {# student} other {# students}}",
+    "copyCode": "Copy class code",
+    "postTitle": "Title",
+    "link": "Link",
+    "postBody": "Details (optional)",
+    "due": "Due date",
+    "post": "Post",
+    "dueOn": "Due {date}",
+    "remove": "Remove",
+    "weakTitle": "Class weak topics (anonymous)",
+    "topic": "Topic",
+    "studentsCol": "Students",
+    "mistakes": "Mistakes",
+    "weakEmpty": "Shown once 5 or more students have practice data, so no one can be singled out.",
+    "myClasses": "My classes",
+    "classCode": "Class code",
+    "join": "Join",
+    "noClasses": "No classes yet",
+    "noClassesText": "Ask your teacher for the class code.",
+    "added": "Added to your calendar."
+  },
+  "honesty": {
+    "title": "How to use AI honestly",
+    "intro": "Soussy Study's AI is a tutor, not a ghostwriter. This matches the IB's academic integrity policy: AI can help you learn, but work you hand in must be your own, and any AI help you use must be acknowledged.",
+    "doTitle": "Good uses",
+    "do": {
+      "d1": "Explain a topic, step by step or with a hint first.",
+      "d2": "Quiz you, make flashcards and mock exams.",
+      "d3": "Give feedback on YOUR draft against the criteria (an estimate).",
+      "d4": "Help you plan: questions to research, an outline to think with.",
+      "d5": "Find sources, which you then read and cite yourself."
+    },
+    "dontTitle": "Not allowed",
+    "dont": {
+      "n1": "Writing any part of an IA, EE, TOK essay or exhibition, or graded homework for you.",
+      "n2": "Copying AI text into work you submit.",
+      "n3": "Using AI in a test or exam unless your teacher allows it.",
+      "n4": "Presenting AI ideas as your own without saying so."
+    },
+    "citeTitle": "How to cite Soussy Study",
+    "citeText": "If you used AI help in a way your teacher allows, say so. A reference like this works for most schools:",
+    "citeIb": "For IB work, cite AI in-text and in your bibliography like any source, and keep notes of what you asked. Check your school's academic integrity policy and ask your teacher or coordinator if unsure.",
+    "estimatesTitle": "Feedback is an estimate",
+    "estimatesText": "Any mark, band or grade the AI gives is an estimate to help you improve. Your teacher's judgement is what counts.",
+    "back": "Back to Soussy Study"
   }
 }

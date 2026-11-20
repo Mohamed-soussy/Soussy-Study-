@@ -13,10 +13,12 @@ import {
   PenTool,
   Settings,
   ShieldCheck,
+  School,
   Timer,
   Trophy,
   Users,
   Video,
+  Webcam,
   type LucideIcon,
 } from "lucide-react";
 
@@ -46,11 +48,13 @@ export const NAV: NavItem[] = [
   { href: "/flashcards", key: "flashcards", icon: Layers },
   { href: "/exam", key: "exam", icon: FileCheck2 },
   { href: "/focus", key: "focus", icon: Timer },
+  { href: "/rooms", key: "rooms", icon: Webcam },
   { href: "/progress", key: "progress", icon: Trophy },
   { href: "/core", key: "core", icon: GraduationCap },
-  { href: "/squads", key: "squads", icon: Users, phase: 7 },
+  { href: "/squads", key: "squads", icon: Users },
   { href: "/workspace", key: "workspace", icon: Columns2 },
   { href: "/notes", key: "notes", icon: NotebookPen },
+  { href: "/teach", key: "teach", icon: School },
   { href: "/moderate", key: "moderate", icon: ShieldCheck, roles: ["moderator"] },
   { href: "/settings", key: "settings", icon: Settings },
 ];

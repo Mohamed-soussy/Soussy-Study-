@@ -28,7 +28,9 @@ export async function guardAi(): Promise<NextResponse | null> {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "signed_out" }, { status: 401 });
   const { data, error } = await supabase.rpc("bump_ai_usage");
-  if (!error && typeof data === "number" && data > DAILY_AI_LIMIT) {
+  // Invites add to the allowance (migration 0007); older databases use the base limit.
+  const limit = typeof data === "number" && data > DAILY_AI_LIMIT ? ((await supabase.rpc("my_ai_limit")).data as number | null) ?? DAILY_AI_LIMIT : DAILY_AI_LIMIT;
+  if (!error && typeof data === "number" && data > limit) {
     return NextResponse.json(
       {
         error: "daily_limit",

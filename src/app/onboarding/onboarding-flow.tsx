@@ -94,7 +94,14 @@ export function OnboardingFlow({ startStep }: { startStep?: number }) {
   useEffect(() => {
     if (status === "signed-out") router.replace("/sign-in");
     if (status === "ready" && profile && !draft) {
-      setDraft(profile);
+      // Came from a school page (e.g. /school/kis): pre-fill the school, city and curriculum.
+      let preset: Partial<Profile> = {};
+      try {
+        preset = JSON.parse(localStorage.getItem("soussy.schoolPreset") ?? "{}") as Partial<Profile>;
+      } catch {
+        /* ignore */
+      }
+      setDraft(profile.school ? profile : { ...preset, ...profile, school: profile.school ?? preset.school, city: profile.city ?? preset.city, country: profile.country ?? preset.country });
       const resume = startStep ?? (profile.onboardedAt ? 0 : profile.onboardingStep);
       setStep(Math.min(Math.max(resume, 0), STEPS.length - 1));
     }

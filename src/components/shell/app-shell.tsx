@@ -1,6 +1,6 @@
 "use client";
 
-import { Columns2, LogOut, PanelLeftClose, PanelLeftOpen, Search, Settings, Smartphone } from "lucide-react";
+import { Columns2, LogOut, PanelLeftClose, PanelLeftOpen, Search, Settings, Smartphone, Volume2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -13,6 +13,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { cn } from "@/lib/utils";
 import { TimerBubble } from "@/components/session/bubble";
 import { DeviceSync, sendToOtherDevice } from "@/components/devices/device-sync";
+import { readAloud } from "@/lib/a11y/settings";
 import { SchoolSync } from "@/components/school/school-sync";
 import { TABS, visibleNav } from "./nav";
 import { ProfileContext } from "./profile-context";
@@ -182,6 +183,7 @@ function TopBar({ name }: { name: string }) {
   const td = useTranslations("devices");
   const pathname = usePathname();
   const [sent, setSent] = useState(false);
+  const [reading, setReading] = useState(false);
   const c = useTranslations("common");
   const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -254,6 +256,17 @@ function TopBar({ name }: { name: string }) {
           </span>
         )}
 
+        {/* Read-aloud everywhere (section 12.5): the selected text, or the page. */}
+        <button
+          type="button"
+          onClick={() => setReading(readAloud())}
+          aria-pressed={reading}
+          className="hidden size-10 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text sm:flex"
+          title={tw("readAloud")}
+          aria-label={tw("readAloud")}
+        >
+          <Volume2 className={reading ? "size-5 text-primary" : "size-5"} />
+        </button>
         <Link
           href={`/workspace?left=${encodeURIComponent(pathname)}`}
           className="hidden size-10 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text sm:flex"

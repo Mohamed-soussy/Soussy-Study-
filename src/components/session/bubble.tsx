@@ -136,7 +136,9 @@ export function TimerBubble() {
     syncServerTime();
     try {
       const p = JSON.parse(localStorage.getItem("soussy.bubble.pos") ?? "null");
+      // Not moved yet: sit on the side where lines end (left in Arabic), away from text starts.
       if (p) setPos(p);
+      else if (document.documentElement.dir === "rtl") setPos((cur) => ({ ...cur, side: "left" }));
     } catch {
       /* ignore */
     }
