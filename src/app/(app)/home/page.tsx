@@ -201,7 +201,7 @@ export default function HomePage() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-text">{e.name}</p>
                     <p className="text-xs text-muted">
-                      {e.level !== "None" && levelsT(e.level)}
+                      {e.level !== "None" && (levelsT.has(e.level) ? levelsT(e.level) : e.level)}
                       {e.targetGrade && <> · {e.targetGrade}</>}
                     </p>
                   </div>

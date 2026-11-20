@@ -12,7 +12,7 @@ import { Markdown } from "@/components/hub/markdown";
 import { useCurrentProfile } from "@/components/shell/profile-context";
 import { Button } from "@/components/ui/button";
 import { Card, Chip, Input, PageHeader, Select } from "@/components/ui/primitives";
-import { getPack } from "@/curriculum";
+import { curriculumName, getPack } from "@/curriculum";
 import { getRepo } from "@/lib/data/repo";
 import { getRepo3, type Mistake, type Prefs, type SavedSolution } from "@/lib/data/repo3";
 import type { VaultFile } from "@/lib/data/types";
@@ -189,7 +189,7 @@ export default function SolverPage() {
           mime: photo?.mime,
           subject: enrollment?.name,
           level: enrollment && enrollment.level !== "None" ? enrollment.level : undefined,
-          curriculum: pack?.id === "ib-dp" ? "IB Diploma" : pack?.id === "american-hs" ? "American high school (AP)" : undefined,
+          curriculum: curriculumName(pack?.id),
           language: locale,
         }),
       });

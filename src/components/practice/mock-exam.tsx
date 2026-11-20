@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useCurrentProfile } from "@/components/shell/profile-context";
 import { Button } from "@/components/ui/button";
 import { Card, Field, Select } from "@/components/ui/primitives";
-import { getPack } from "@/curriculum";
+import { curriculumName, getPack } from "@/curriculum";
 import { unitsFor } from "@/curriculum/units";
 import { getRepo3 } from "@/lib/data/repo3";
 import { saveAttempt } from "@/lib/progress/stats";
@@ -20,6 +20,14 @@ import type { Exam } from "@/prompts/coach.v1";
 const STYLES = {
   "ib-dp": ["IB Paper 1 (multiple choice)", "IB Paper 2 (structured questions)"],
   "american-hs": ["AP multiple choice", "AP free response", "Unit test"],
+  "ib-cp": ["IB Paper 1 (multiple choice)", "IB Paper 2 (structured questions)"],
+  "ib-myp": ["MYP eAssessment style", "Criterion-based unit test"],
+  cambridge: ["Cambridge Paper 1 (multiple choice)", "Cambridge structured paper", "Cambridge extended paper"],
+  edexcel: ["Edexcel exam paper", "Edexcel multiple choice"],
+  uk: ["GCSE / A Level exam paper", "Multiple choice"],
+  saudi: ["Tahsili style (multiple choice)", "Qudurat style (multiple choice)", "Final exam"],
+  indian: ["CBSE board exam paper", "Multiple choice"],
+  french: ["Épreuve du bac", "Contrôle"],
   custom: ["Multiple choice", "Structured questions"],
 } as Record<string, string[]>;
 
@@ -70,7 +78,7 @@ export function MockExam() {
       const res = await fetch("/api/coach/exam", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ course: `${enrollment.name} ${enrollment.level !== "None" ? enrollment.level : ""}`.trim(), curriculum: pack?.id === "ib-dp" ? "IB Diploma" : pack?.id === "american-hs" ? "US high school / AP" : "", units: list, style, minutes, calculator }),
+        body: JSON.stringify({ course: `${enrollment.name} ${enrollment.level !== "None" ? enrollment.level : ""}`.trim(), curriculum: curriculumName(pack?.id) ?? "", units: list, style, minutes, calculator }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message ?? t("failed"));

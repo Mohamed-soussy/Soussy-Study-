@@ -1,4 +1,5 @@
 import {
+  Activity,
   BookMarked,
   Columns2,
   NotebookPen,
@@ -56,6 +57,7 @@ export const NAV: NavItem[] = [
   { href: "/notes", key: "notes", icon: NotebookPen },
   { href: "/teach", key: "teach", icon: School },
   { href: "/moderate", key: "moderate", icon: ShieldCheck, roles: ["moderator"] },
+  { href: "/system", key: "system", icon: Activity, roles: ["moderator"] },
   { href: "/settings", key: "settings", icon: Settings },
 ];
 

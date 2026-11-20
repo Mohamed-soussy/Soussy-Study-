@@ -4,7 +4,13 @@
  * Later phases add syllabus units, assessments, command words and exam sessions.
  */
 
-export type Level = "HL" | "SL" | "Standard" | "Honors" | "AP" | "None";
+export type Level =
+  | "HL" | "SL" // IB Diploma
+  | "Standard" | "Honors" | "AP" // American; "Standard"/"Extended" also MYP maths
+  | "Extended" | "Core" // Cambridge IGCSE tiers, MYP extended maths
+  | "Foundation" | "Higher" // UK GCSE tiers
+  | "GCSE" | "IGCSE" | "AS" | "A Level" | "BTEC" // British qualifications
+  | "None";
 
 export interface SubjectDef {
   id: string;
@@ -37,8 +43,8 @@ export interface CurriculumPack {
   id: string;
   /** i18n key under "curriculum.packs". */
   nameKey: string;
-  /** Year options, e.g. DP1/DP2 or Grade 9–12. */
-  years: { id: string; labelKey: string }[];
+  /** Year options, e.g. DP1/DP2 or Grade 9–12; `grades` = the school grades (6–13) each covers. */
+  years: { id: string; labelKey: string; grades?: number[] }[];
   groups: GroupDef[];
   subjects: SubjectDef[];
   minSubjects: number;

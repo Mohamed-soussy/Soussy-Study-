@@ -1,46 +1,59 @@
 import type { CurriculumPack, SubjectChoice, SubjectDef, ValidationIssue } from "../types";
 
-/** IB Diploma Programme subjects offered at launch, by group. */
 const both = ["HL", "SL"] as const;
 const slOnly = ["SL"] as const;
 
+/** The languages most often offered; any other language can still be studied as a school-supported Language A. */
+const LANGS: [string, string][] = [
+  ["eng", "English"], ["ara", "Arabic"], ["fre", "French"], ["spa", "Spanish"], ["ger", "German"], ["chi", "Chinese"],
+  ["hin", "Hindi"], ["urd", "Urdu"], ["tur", "Turkish"], ["rus", "Russian"], ["jpn", "Japanese"], ["kor", "Korean"],
+  ["ita", "Italian"], ["por", "Portuguese"], ["dut", "Dutch"], ["per", "Persian"], ["ind", "Indonesian"], ["mal", "Malay"],
+];
+const AB_INITIO = ["fre", "spa", "ger", "chi", "ara", "ita", "jpn", "rus", "kor"];
+
+/** Every IB Diploma Programme subject, by group (the current subject guides). */
 const subjects: SubjectDef[] = [
-  // Group 1 — Studies in Language and Literature
-  { id: "eng-a-langlit", name: "English A: Language and Literature", group: "g1", levels: [...both] },
-  { id: "eng-a-lit", name: "English A: Literature", group: "g1", levels: [...both] },
-  { id: "ara-a-langlit", name: "Arabic A: Language and Literature", group: "g1", levels: [...both] },
-  { id: "ara-a-lit", name: "Arabic A: Literature", group: "g1", levels: [...both] },
-  // Group 2 — Language Acquisition
-  { id: "eng-b", name: "English B", group: "g2", levels: [...both] },
-  { id: "ara-b", name: "Arabic B", group: "g2", levels: [...both] },
-  { id: "fre-b", name: "French B", group: "g2", levels: [...both] },
-  { id: "spa-b", name: "Spanish B", group: "g2", levels: [...both] },
-  { id: "fre-ab", name: "French ab initio", group: "g2", levels: [...slOnly] },
-  { id: "spa-ab", name: "Spanish ab initio", group: "g2", levels: [...slOnly] },
-  // Group 3 — Individuals and Societies
-  { id: "econ", name: "Economics", group: "g3", levels: [...both] },
+  // Group 1: Studies in Language and Literature
+  ...LANGS.flatMap(([code, name]): SubjectDef[] => [
+    { id: `${code}-a-lit`, name: `${name} A: Literature`, group: "g1", levels: [...both] },
+    { id: `${code}-a-langlit`, name: `${name} A: Language & Literature`, group: "g1", levels: [...both] },
+  ]),
+  { id: "lit-perf", name: "Literature and Performance", group: "g1", levels: [...slOnly] },
+  { id: "ssst-a-lit", name: "Language A: Literature (school-supported self-taught)", group: "g1", levels: [...slOnly] },
+  // Group 2: Language Acquisition
+  ...LANGS.map(([code, name]): SubjectDef => ({ id: `${code}-b`, name: `${name} B`, group: "g2", levels: [...both] })),
+  ...LANGS.filter(([code]) => AB_INITIO.includes(code)).map(([code, name]): SubjectDef => ({ id: `${code}-ab`, name: `${name} ab initio`, group: "g2", levels: [...slOnly] })),
+  { id: "latin", name: "Latin", group: "g2", levels: [...both] },
+  { id: "greek", name: "Classical Greek", group: "g2", levels: [...both] },
+  // Group 3: Individuals and Societies
   { id: "bm", name: "Business Management", group: "g3", levels: [...both] },
-  { id: "hist", name: "History", group: "g3", levels: [...both] },
-  { id: "psych", name: "Psychology", group: "g3", levels: [...both] },
+  { id: "ds", name: "Digital Society", group: "g3", levels: [...both] },
+  { id: "econ", name: "Economics", group: "g3", levels: [...both] },
   { id: "geo", name: "Geography", group: "g3", levels: [...both] },
   { id: "gp", name: "Global Politics", group: "g3", levels: [...both] },
-  { id: "ds", name: "Digital Society", group: "g3", levels: [...both] },
-  // Group 4 — Sciences
+  { id: "hist", name: "History", group: "g3", levels: [...both] },
+  { id: "phil", name: "Philosophy", group: "g3", levels: [...both] },
+  { id: "psych", name: "Psychology", group: "g3", levels: [...both] },
+  { id: "anth", name: "Social and Cultural Anthropology", group: "g3", levels: [...both] },
+  { id: "wr", name: "World Religions", group: "g3", levels: [...slOnly] },
+  // Group 4: Sciences
   { id: "bio", name: "Biology", group: "g4", levels: [...both] },
   { id: "chem", name: "Chemistry", group: "g4", levels: [...both] },
   { id: "phys", name: "Physics", group: "g4", levels: [...both] },
   { id: "cs", name: "Computer Science", group: "g4", levels: [...both] },
   { id: "dt", name: "Design Technology", group: "g4", levels: [...both] },
   { id: "sehs", name: "Sports, Exercise and Health Science", group: "g4", levels: [...both] },
+  { id: "astro", name: "Astronomy (school-based)", group: "g4", levels: [...slOnly] },
   // Interdisciplinary: counts for group 3 or group 4
   { id: "ess", name: "Environmental Systems and Societies", group: "g3g4", levels: [...both] },
-  // Group 5 — Mathematics
+  // Group 5: Mathematics
   { id: "math-aa", name: "Mathematics: Analysis and Approaches", group: "g5", levels: [...both] },
   { id: "math-ai", name: "Mathematics: Applications and Interpretation", group: "g5", levels: [...both] },
-  // Group 6 — The Arts
+  // Group 6: The Arts
   { id: "va", name: "Visual Arts", group: "g6", levels: [...both] },
   { id: "music", name: "Music", group: "g6", levels: [...both] },
   { id: "theatre", name: "Theatre", group: "g6", levels: [...both] },
+  { id: "dance", name: "Dance", group: "g6", levels: [...both] },
   { id: "film", name: "Film", group: "g6", levels: [...both] },
 ];
 
@@ -95,12 +108,14 @@ function validate(choices: SubjectChoice[]): ValidationIssue[] {
   return issues;
 }
 
+export { subjects as dpSubjects, validate as validateDiploma };
+
 export const ibDiploma: CurriculumPack = {
   id: "ib-dp",
   nameKey: "ibDp",
   years: [
-    { id: "dp1", labelKey: "dp1" },
-    { id: "dp2", labelKey: "dp2" },
+    { id: "dp1", labelKey: "dp1", grades: [11] },
+    { id: "dp2", labelKey: "dp2", grades: [12] },
   ],
   groups: [
     { id: "g1", labelKey: "ib1" },

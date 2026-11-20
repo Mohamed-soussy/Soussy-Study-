@@ -109,7 +109,13 @@
       "semester": "Semester",
       "fall": "Fall",
       "spring": "Spring",
-      "pickRequired": "Pick a curriculum and year to continue."
+      "pickRequired": "Pick a curriculum and year to continue.",
+      "gradeQuestion": "What grade are you in?",
+      "university": "University",
+      "grade": "Grade {n}",
+      "curriculumQuestion": "Which curriculum do you study?",
+      "suggested": "Suggested",
+      "gradeRequired": "Pick your grade first."
     },
     "subjects": {
       "titleIb": "Pick your 6 subjects",
@@ -130,7 +136,9 @@
       "classCode": "Class code",
       "details": "Teachers and class codes",
       "detailsHint": "Optional. Helps match your Teams classes later.",
-      "allGood": "Looks good."
+      "allGood": "Looks good.",
+      "search": "Search {count} subjects",
+      "noMatch": "No subject matches that. Try another word, or add it yourself below."
     },
     "learn": {
       "title": "How you like to learn",
@@ -211,27 +219,39 @@
     "packs": {
       "ibDp": "IB Diploma",
       "americanHs": "American high school",
-      "custom": "Build my own"
+      "custom": "Build my own",
+      "ibMyp": "IB Middle Years (MYP)",
+      "ibCp": "IB Career-related (CP)",
+      "cambridge": "Cambridge International",
+      "edexcel": "Pearson Edexcel International",
+      "uk": "UK National Curriculum",
+      "saudi": "Saudi National Curriculum",
+      "indian": "Indian (CBSE)",
+      "french": "French Baccalauréat"
     },
     "cards": {
-      "ib": "International Baccalaureate",
-      "ibText": "Diploma Programme, HL and SL",
+      "ib": "IB Diploma (DP)",
+      "ibText": "Grades 11–12 · HL and SL",
       "american": "American",
-      "americanText": "High school, Honors and AP",
+      "americanText": "Standard, Honors and all AP courses",
       "cambridge": "Cambridge International",
-      "cambridgeText": "IGCSE, O Level, AS and A Level",
+      "cambridgeText": "IGCSE, AS and A Level",
       "edexcel": "Pearson Edexcel",
-      "edexcelText": "International GCSE, AS and A Level",
+      "edexcelText": "International GCSE and IAL",
       "uk": "UK national",
       "ukText": "GCSE, A Level and BTEC",
       "saudi": "Saudi national",
-      "saudiText": "Intermediate and secondary, Qudurat and Tahsili",
+      "saudiText": "Intermediate and Secondary · Qudurat and Tahsili",
       "indian": "Indian boards",
-      "indianText": "CBSE, ICSE and ISC",
+      "indianText": "CBSE · Class 9–12",
       "french": "French Baccalauréat",
-      "frenchText": "Lycée and Bac",
+      "frenchText": "Collège and Lycée · Bac général",
       "own": "Build my own",
-      "ownText": "Any other curriculum or university"
+      "ownText": "Any other curriculum or university",
+      "ibMyp": "IB Middle Years (MYP)",
+      "ibMypText": "Grades 6–10 · MYP 1–5",
+      "ibCp": "IB Career-related (CP)",
+      "ibCpText": "Grades 11–12 · DP courses plus career study"
     },
     "groups": {
       "ib1": "Group 1 · Language and literature",
@@ -248,7 +268,34 @@
       "usArabic": "Arabic and Islamic studies",
       "usLanguages": "World languages",
       "usElectives": "Electives",
-      "custom": "Your subjects"
+      "custom": "Your subjects",
+      "mypLangLit": "Language and literature",
+      "mypLangAcq": "Language acquisition",
+      "mypIndSoc": "Individuals and societies",
+      "mypSciences": "Sciences",
+      "mypMath": "Mathematics",
+      "mypArts": "Arts",
+      "mypPhe": "Physical and health education",
+      "mypDesign": "Design",
+      "usAp": "Advanced Placement (AP)",
+      "camIgcse": "IGCSE",
+      "camAlevel": "AS and A Level",
+      "edxIgcse": "International GCSE",
+      "edxIal": "International A Level",
+      "ukGcse": "GCSE",
+      "ukAlevel": "A Level",
+      "ukBtec": "BTEC",
+      "saCore": "Core subjects",
+      "saScience": "Science track",
+      "saPathways": "Pathways",
+      "saExams": "National exams",
+      "inLanguages": "Languages",
+      "inScience": "Science",
+      "inCommerce": "Commerce",
+      "inHumanities": "Humanities",
+      "frCommon": "Common core",
+      "frSpecialty": "Specialities",
+      "frOptions": "Options"
     },
     "years": {
       "dp1": "DP1",
@@ -264,7 +311,35 @@
       "y11": "Year 11",
       "y12": "Year 12",
       "y13": "Year 13",
-      "uni": "University"
+      "uni": "University",
+      "g6": "Grade 6",
+      "g7": "Grade 7",
+      "g8": "Grade 8",
+      "myp1": "MYP 1",
+      "myp2": "MYP 2",
+      "myp3": "MYP 3",
+      "myp4": "MYP 4",
+      "myp5": "MYP 5",
+      "cp1": "CP year 1",
+      "cp2": "CP year 2",
+      "y10igcse": "Year 10 (IGCSE)",
+      "y11igcse": "Year 11 (IGCSE)",
+      "y12as": "Year 12 (AS)",
+      "y13a": "Year 13 (A Level)",
+      "saInt1": "Intermediate 1",
+      "saInt2": "Intermediate 2",
+      "saInt3": "Intermediate 3",
+      "saSec1": "Secondary 1",
+      "saSec2": "Secondary 2",
+      "saSec3": "Secondary 3",
+      "class9": "Class 9",
+      "class10": "Class 10",
+      "class11": "Class 11",
+      "class12": "Class 12",
+      "fr3e": "3e",
+      "fr2nde": "Seconde",
+      "fr1ere": "Première",
+      "frTle": "Terminale"
     },
     "levels": {
       "HL": "HL",
@@ -272,7 +347,16 @@
       "Standard": "Standard",
       "Honors": "Honors",
       "AP": "AP",
-      "None": "—"
+      "None": "—",
+      "Extended": "Extended",
+      "Core": "Core",
+      "Foundation": "Foundation",
+      "Higher": "Higher",
+      "GCSE": "GCSE",
+      "IGCSE": "IGCSE",
+      "AS": "AS",
+      "A Level": "A Level",
+      "BTEC": "BTEC"
     }
   },
   "validation": {
@@ -287,7 +371,10 @@
     "usTooMany": "That's {count} courses. The limit is 10.",
     "usLevel": "{subject} isn't offered at {level}.",
     "customTooFew": "Add at least one subject.",
-    "customTooMany": "That's {count} subjects. The limit is 12."
+    "customTooMany": "That's {count} subjects. The limit is 12.",
+    "packTooFew": "Add at least {min} subjects. You have {count}.",
+    "packTooMany": "That's more than {max} subjects. You have {count}.",
+    "cpTwoDp": "The CP needs at least 2 Diploma courses. You have {count}."
   },
   "nav": {
     "home": "Home",
@@ -314,7 +401,8 @@
     "progress": "Progress",
     "exam": "Practice",
     "rooms": "Study rooms",
-    "teach": "Classes"
+    "teach": "Classes",
+    "system": "System check"
   },
   "home": {
     "morning": "Good morning, {name}.",
@@ -2074,5 +2162,27 @@
     "estimatesTitle": "Feedback is an estimate",
     "estimatesText": "Any mark, band or grade the AI gives is an estimate to help you improve. Your teacher's judgement is what counts.",
     "back": "Back to Soussy Study"
+  },
+  "system": {
+    "title": "System check",
+    "text": "Is every key, service and database update in place on this site? Run it after any change in Vercel or Supabase.",
+    "again": "Check again",
+    "ok": "Working",
+    "problem": "Problem",
+    "optional": "Optional",
+    "fix": "How to fix:",
+    "moderatorsOnly": "Only moderators can run the system check.",
+    "manualTitle": "Also check by hand (can't be tested from here)",
+    "names": {
+      "supabase": "Accounts (Supabase)",
+      "migrations": "Database updates 0001–0007",
+      "migration0008": "Database update 0008 (grades)",
+      "serviceRole": "Server key (service role)",
+      "gemini": "Gemini (whiteboard)",
+      "groq": "Groq (chat, solver, lessons…)",
+      "tavily": "Tavily (resource finder)",
+      "microsoft": "Microsoft sign-in",
+      "level3": "Teams Level 3"
+    }
   }
 }

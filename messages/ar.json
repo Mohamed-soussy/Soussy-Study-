@@ -109,7 +109,13 @@
       "semester": "الفصل الدراسي",
       "fall": "الخريف",
       "spring": "الربيع",
-      "pickRequired": "اختر منهجًا وسنة للمتابعة."
+      "pickRequired": "اختر منهجًا وسنة للمتابعة.",
+      "gradeQuestion": "في أي صف أنت؟",
+      "university": "الجامعة",
+      "grade": "الصف {n}",
+      "curriculumQuestion": "أي منهج تدرس؟",
+      "suggested": "مقترح",
+      "gradeRequired": "اختر صفك أولاً."
     },
     "subjects": {
       "titleIb": "اختر موادك الست",
@@ -130,7 +136,9 @@
       "classCode": "رمز الصف",
       "details": "المعلّمون ورموز الصفوف",
       "detailsHint": "اختياري. يساعد لاحقًا في مطابقة صفوفك على Teams.",
-      "allGood": "يبدو جيدًا."
+      "allGood": "يبدو جيدًا.",
+      "search": "ابحث في {count} مادة",
+      "noMatch": "لا توجد مادة بهذا الاسم. جرّب كلمة أخرى أو أضفها بنفسك بالأسفل."
     },
     "learn": {
       "title": "كيف تحب أن تتعلّم",
@@ -211,27 +219,39 @@
     "packs": {
       "ibDp": "دبلوم البكالوريا الدولية",
       "americanHs": "الثانوية الأمريكية",
-      "custom": "أنشئ منهجك"
+      "custom": "أنشئ منهجك",
+      "ibMyp": "البكالوريا الدولية - السنوات المتوسطة (MYP)",
+      "ibCp": "البكالوريا الدولية - المسار المهني (CP)",
+      "cambridge": "كامبريدج الدولية",
+      "edexcel": "بيرسون إدكسل الدولية",
+      "uk": "المنهج البريطاني",
+      "saudi": "المنهج السعودي",
+      "indian": "المنهج الهندي (CBSE)",
+      "french": "البكالوريا الفرنسية"
     },
     "cards": {
-      "ib": "البكالوريا الدولية",
-      "ibText": "برنامج الدبلوم، عالي وقياسي",
+      "ib": "دبلوم البكالوريا الدولية (DP)",
+      "ibText": "الصفان 11–12 · مستوى عالٍ وعادي",
       "american": "الأمريكي",
-      "americanText": "الثانوية، Honors وAP",
+      "americanText": "عادي ومتقدم وجميع مواد AP",
       "cambridge": "كامبريدج الدولية",
-      "cambridgeText": "IGCSE وO Level وAS وA Level",
+      "cambridgeText": "IGCSE وAS وA Level",
       "edexcel": "بيرسون إدكسل",
-      "edexcelText": "International GCSE وAS وA Level",
+      "edexcelText": "International GCSE وIAL",
       "uk": "البريطاني الوطني",
       "ukText": "GCSE وA Level وBTEC",
       "saudi": "السعودي الوطني",
-      "saudiText": "المتوسط والثانوي، القدرات والتحصيلي",
+      "saudiText": "المتوسط والثانوي · القدرات والتحصيلي",
       "indian": "المناهج الهندية",
-      "indianText": "CBSE وICSE وISC",
+      "indianText": "CBSE · الصفوف 9–12",
       "french": "البكالوريا الفرنسية",
-      "frenchText": "الليسيه والباك",
+      "frenchText": "الإعدادي والثانوي · البكالوريا العامة",
       "own": "أنشئ منهجك",
-      "ownText": "أي منهج آخر أو جامعة"
+      "ownText": "أي منهج آخر أو جامعة",
+      "ibMyp": "البكالوريا الدولية - السنوات المتوسطة (MYP)",
+      "ibMypText": "الصفوف 6–10 · MYP 1–5",
+      "ibCp": "البكالوريا الدولية - المسار المهني (CP)",
+      "ibCpText": "الصفان 11–12 · مواد الدبلوم مع دراسة مهنية"
     },
     "groups": {
       "ib1": "المجموعة 1 · اللغة والأدب",
@@ -248,7 +268,34 @@
       "usArabic": "العربية والدراسات الإسلامية",
       "usLanguages": "اللغات العالمية",
       "usElectives": "المواد الاختيارية",
-      "custom": "موادك"
+      "custom": "موادك",
+      "mypLangLit": "اللغة والأدب",
+      "mypLangAcq": "اكتساب اللغة",
+      "mypIndSoc": "الأفراد والمجتمعات",
+      "mypSciences": "العلوم",
+      "mypMath": "الرياضيات",
+      "mypArts": "الفنون",
+      "mypPhe": "التربية البدنية والصحية",
+      "mypDesign": "التصميم",
+      "usAp": "المواد المتقدمة (AP)",
+      "camIgcse": "IGCSE",
+      "camAlevel": "AS وA Level",
+      "edxIgcse": "International GCSE",
+      "edxIal": "International A Level",
+      "ukGcse": "GCSE",
+      "ukAlevel": "A Level",
+      "ukBtec": "BTEC",
+      "saCore": "المواد الأساسية",
+      "saScience": "المسار العلمي",
+      "saPathways": "المسارات",
+      "saExams": "الاختبارات الوطنية",
+      "inLanguages": "اللغات",
+      "inScience": "العلوم",
+      "inCommerce": "التجارة",
+      "inHumanities": "العلوم الإنسانية",
+      "frCommon": "الجذع المشترك",
+      "frSpecialty": "التخصصات",
+      "frOptions": "الاختيارية"
     },
     "years": {
       "dp1": "DP1",
@@ -264,7 +311,35 @@
       "y11": "السنة 11",
       "y12": "السنة 12",
       "y13": "السنة 13",
-      "uni": "الجامعة"
+      "uni": "الجامعة",
+      "g6": "الصف 6",
+      "g7": "الصف 7",
+      "g8": "الصف 8",
+      "myp1": "MYP 1",
+      "myp2": "MYP 2",
+      "myp3": "MYP 3",
+      "myp4": "MYP 4",
+      "myp5": "MYP 5",
+      "cp1": "السنة الأولى CP",
+      "cp2": "السنة الثانية CP",
+      "y10igcse": "السنة 10 (IGCSE)",
+      "y11igcse": "السنة 11 (IGCSE)",
+      "y12as": "السنة 12 (AS)",
+      "y13a": "السنة 13 (A Level)",
+      "saInt1": "أول متوسط",
+      "saInt2": "ثاني متوسط",
+      "saInt3": "ثالث متوسط",
+      "saSec1": "أول ثانوي",
+      "saSec2": "ثاني ثانوي",
+      "saSec3": "ثالث ثانوي",
+      "class9": "الصف 9",
+      "class10": "الصف 10",
+      "class11": "الصف 11",
+      "class12": "الصف 12",
+      "fr3e": "3e",
+      "fr2nde": "Seconde",
+      "fr1ere": "Première",
+      "frTle": "Terminale"
     },
     "levels": {
       "HL": "عالي",
@@ -272,7 +347,16 @@
       "Standard": "عادي",
       "Honors": "Honors",
       "AP": "AP",
-      "None": "—"
+      "None": "—",
+      "Extended": "موسّع",
+      "Core": "أساسي",
+      "Foundation": "تأسيسي",
+      "Higher": "متقدم",
+      "GCSE": "GCSE",
+      "IGCSE": "IGCSE",
+      "AS": "AS",
+      "A Level": "A Level",
+      "BTEC": "BTEC"
     }
   },
   "validation": {
@@ -287,7 +371,10 @@
     "usTooMany": "هذه {count} مواد. الحد الأقصى 10.",
     "usLevel": "{subject} غير متاحة بمستوى {level}.",
     "customTooFew": "أضف مادة واحدة على الأقل.",
-    "customTooMany": "هذه {count} مواد. الحد الأقصى 12."
+    "customTooMany": "هذه {count} مواد. الحد الأقصى 12.",
+    "packTooFew": "أضف {min} مواد على الأقل. لديك {count}.",
+    "packTooMany": "هذا أكثر من {max} مواد. لديك {count}.",
+    "cpTwoDp": "يحتاج برنامج CP إلى مادتين من الدبلوم على الأقل. لديك {count}."
   },
   "nav": {
     "home": "الرئيسية",
@@ -314,7 +401,8 @@
     "progress": "التقدّم",
     "exam": "التدريب",
     "rooms": "غرف الدراسة",
-    "teach": "الصفوف"
+    "teach": "الصفوف",
+    "system": "فحص النظام"
   },
   "home": {
     "morning": "صباح الخير يا {name}.",
@@ -2074,5 +2162,27 @@
     "estimatesTitle": "الملاحظات تقديرية",
     "estimatesText": "أي درجة أو نطاق يعطيه الذكاء الاصطناعي تقدير لمساعدتك على التحسّن. حكم معلّمك هو المعتمد.",
     "back": "العودة إلى Soussy Study"
+  },
+  "system": {
+    "title": "فحص النظام",
+    "text": "هل كل مفتاح وخدمة وتحديث لقاعدة البيانات في مكانه على هذا الموقع؟ شغّله بعد أي تغيير في Vercel أو Supabase.",
+    "again": "افحص مجددًا",
+    "ok": "يعمل",
+    "problem": "مشكلة",
+    "optional": "اختياري",
+    "fix": "طريقة الإصلاح:",
+    "moderatorsOnly": "فحص النظام للمشرفين فقط.",
+    "manualTitle": "تحقق أيضًا يدويًا (لا يمكن فحصه من هنا)",
+    "names": {
+      "supabase": "الحسابات (Supabase)",
+      "migrations": "تحديثات قاعدة البيانات 0001–0007",
+      "migration0008": "تحديث قاعدة البيانات 0008 (الصفوف)",
+      "serviceRole": "مفتاح الخادم (service role)",
+      "gemini": "Gemini (السبورة)",
+      "groq": "Groq (الدردشة والحلّال والحصص…)",
+      "tavily": "Tavily (البحث عن المصادر)",
+      "microsoft": "تسجيل الدخول بـ Microsoft",
+      "level3": "Teams المستوى 3"
+    }
   }
 }

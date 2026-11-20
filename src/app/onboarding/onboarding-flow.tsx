@@ -64,6 +64,7 @@ function checkStep(step: number, p: Profile): string | null {
     case 2:
       return p.school?.trim() ? null : "school.schoolRequired";
     case 3:
+      if (p.grade === undefined) return "curriculum.gradeRequired";
       return p.packId && p.year ? null : "curriculum.pickRequired";
     case 4: {
       const pack = getPack(p.packId);

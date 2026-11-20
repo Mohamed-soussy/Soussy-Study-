@@ -25,7 +25,7 @@ import { useCurrentProfile } from "@/components/shell/profile-context";
 import { Button } from "@/components/ui/button";
 import { Toast } from "@/components/ui/drawer";
 import { Card, Input, Select } from "@/components/ui/primitives";
-import { getPack } from "@/curriculum";
+import { curriculumName, getPack } from "@/curriculum";
 import { addDays } from "@/lib/calendar/logic";
 import { getRepo, scoreText } from "@/lib/data/repo";
 import { getRepo3, type Prefs } from "@/lib/data/repo3";
@@ -221,7 +221,7 @@ export function ChatTab() {
           sources: sources.map(({ n, label, text }) => ({ n, label, text })),
           context: {
             name: profile.fullName,
-            curriculum: pack?.id === "ib-dp" ? "IB Diploma" : pack?.id === "american-hs" ? "American high school" : profile.curriculumCard,
+            curriculum: curriculumName(pack?.id) ?? profile.curriculumCard,
             year: profile.year,
             subjects: profile.enrollments.map((e) => ({ name: e.name, level: e.level, target: e.targetGrade })),
             focusSubject: profile.enrollments.find((e) => e.subjectId === chat.subject_code)?.name,
@@ -298,7 +298,7 @@ export function ChatTab() {
   }
 
   const showStart = !active && messages.length === 0;
-  const cards = INTENT_CARDS.filter((c) => !c.only || c.only === profile.packId);
+  const cards = INTENT_CARDS.filter((c) => !c.only || c.only === profile.packId || (c.only === "ib-dp" && profile.packId === "ib-cp"));
 
   return (
     <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">

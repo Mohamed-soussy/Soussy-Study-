@@ -20,7 +20,7 @@ function Core() {
   const profile = useCurrentProfile();
   const params = useSearchParams();
   const router = useRouter();
-  const ib = profile.packId !== "american-hs";
+  const ib = profile.packId === "ib-dp" || profile.packId === "ib-cp";
   const tabs: readonly string[] = ib ? IB : US;
   const all = [...new Set([...IB, ...US])];
   const tab = all.find((x) => x === params.get("tab")) ?? tabs[0];

@@ -21,7 +21,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Card, Chip, Field, Input, Select } from "@/components/ui/primitives";
-import { curriculumCards, getPack, type CurriculumPack, type Level, type SubjectDef } from "@/curriculum";
+import { curriculumCards, fitsGrade, getPack, GRADES, yearForGrade, type CurriculumPack, type Level, type SubjectDef } from "@/curriculum";
 import { ageOn, daysUntil, TERMS_VERSION, type Enrollment, type LearningBlend, type Profile } from "@/lib/profile/types";
 import { cn, subjectColor } from "@/lib/utils";
 
@@ -360,12 +360,16 @@ export function CurriculumStep({ draft, update, errorKey }: StepProps) {
   const years = useTranslations("curriculum.years");
   const [query, setQuery] = useState("");
   const pack = getPack(draft.packId);
+  const grade = draft.grade;
 
-  const visible = curriculumCards.filter((card) => {
-    if (!query.trim()) return true;
-    const hay = `${cards(card.id)} ${cards(`${card.id}Text`)}`.toLowerCase();
-    return hay.includes(query.trim().toLowerCase());
-  });
+  // Curricula that have this grade come first, marked "Suggested".
+  const visible = curriculumCards
+    .filter((card) => {
+      if (!query.trim()) return true;
+      const hay = `${cards(card.id)} ${cards(`${card.id}Text`)}`.toLowerCase();
+      return hay.includes(query.trim().toLowerCase());
+    })
+    .sort((x, y) => Number(fitsGrade(y.packId, grade)) - Number(fitsGrade(x.packId, grade)));
 
   function pick(cardId: string, packId: string) {
     if (packId === draft.packId) {
@@ -373,12 +377,42 @@ export function CurriculumStep({ draft, update, errorKey }: StepProps) {
       return;
     }
     // A different pack means different subjects and years: start those fresh.
-    update({ curriculumCard: cardId, packId, year: undefined, examSession: undefined, semester: undefined, enrollments: [] });
+    update({ curriculumCard: cardId, packId, year: yearForGrade(packId, grade), examSession: undefined, semester: undefined, enrollments: [] });
+  }
+
+  function pickGrade(g: number) {
+    update({ grade: g, ...(draft.packId ? { year: yearForGrade(draft.packId, g) ?? draft.year } : {}) });
   }
 
   return (
     <>
       <StepHeader title={t("title")} lead={t("lead")} />
+      <section className="flex flex-col gap-2" aria-labelledby="grade-label">
+        <h2 id="grade-label" className="text-sm font-semibold text-text">
+          {t("gradeQuestion")}
+        </h2>
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-labelledby="grade-label">
+          {GRADES.map((g) => (
+            <button
+              key={g}
+              type="button"
+              role="radio"
+              aria-checked={grade === g}
+              onClick={() => pickGrade(g)}
+              className={cn(
+                "min-h-10 rounded-[10px] border px-4 text-sm font-medium",
+                grade === g ? "border-primary bg-primary-soft text-primary" : "border-border bg-surface text-text hover:border-primary",
+              )}
+            >
+              {g === 13 ? t("university") : t("grade", { n: g })}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {grade !== undefined && (
+        <>
+      <h2 className="text-sm font-semibold text-text">{t("curriculumQuestion")}</h2>
       <Input type="search" placeholder={t("search")} aria-label={t("search")} value={query} onChange={(e) => setQuery(e.target.value)} />
       <div className="grid gap-3 sm:grid-cols-2">
         {visible.map((card) => (
@@ -386,7 +420,7 @@ export function CurriculumStep({ draft, update, errorKey }: StepProps) {
             <div className="min-w-0 flex-1">
               <p className="font-semibold text-text">{cards(card.id)}</p>
               <p className="text-sm text-muted">{cards(`${card.id}Text`)}</p>
-              {!card.ready && <p className="mt-1 text-xs font-medium text-warning">{t("packSoon")}</p>}
+              {card.packId !== "custom" && fitsGrade(card.packId, grade) && <p className="mt-1 text-xs font-semibold text-primary">{t("suggested")}</p>}
             </div>
             {draft.curriculumCard === card.id && <Check className="size-5 shrink-0 text-primary" aria-hidden />}
           </ChoiceCard>
@@ -404,7 +438,7 @@ export function CurriculumStep({ draft, update, errorKey }: StepProps) {
               options={pack.years.map((y) => ({ value: y.id, label: years(y.labelKey) }))}
             />
           </div>
-          {pack.id === "ib-dp" && (
+          {(pack.id === "ib-dp" || pack.id === "ib-cp") && (
             <Field label={t("examSession")} htmlFor="exam-session">
               <Select id="exam-session" value={draft.examSession ?? ""} onChange={(e) => update({ examSession: e.target.value })}>
                 <option value="" disabled>
@@ -433,6 +467,8 @@ export function CurriculumStep({ draft, update, errorKey }: StepProps) {
             </div>
           )}
         </Card>
+      )}
+        </>
       )}
       <StepError errorKey={errorKey} />
     </>
@@ -463,6 +499,8 @@ export function SubjectsStep({ draft, update, showError }: StepProps) {
   const v = useTranslations("validation");
   const pack = getPack(draft.packId)!;
   const [custom, setCustom] = useState("");
+  const [query, setQuery] = useState("");
+  const levelLabel = (l: Level) => (levelsT.has(l) ? levelsT(l) : l);
 
   const chosen = draft.enrollments;
   const issues = pack.validate(chosen);
@@ -470,10 +508,13 @@ export function SubjectsStep({ draft, update, showError }: StepProps) {
   const hl = chosen.filter((e) => e.level === "HL").length;
   const sl = chosen.filter((e) => e.level === "SL").length;
 
-  const byGroup = useMemo(
-    () => pack.groups.map((g) => ({ group: g, subjects: pack.subjects.filter((s) => s.group === g.id) })).filter((g) => g.subjects.length),
-    [pack],
-  );
+  // Search across every subject of the curriculum (names stay simple, e.g. "English B").
+  const byGroup = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return pack.groups
+      .map((g) => ({ group: g, subjects: pack.subjects.filter((s) => s.group === g.id && (!q || s.name.toLowerCase().includes(q))) }))
+      .filter((g) => g.subjects.length);
+  }, [pack, query]);
 
   const setEnrollments = (enrollments: Enrollment[]) => update({ enrollments });
 
@@ -533,6 +574,11 @@ export function SubjectsStep({ draft, update, showError }: StepProps) {
         )}
       </div>
 
+      {pack.subjects.length > 0 && (
+        <Input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("search", { count: pack.subjects.length })} aria-label={t("search", { count: pack.subjects.length })} />
+      )}
+      {byGroup.length === 0 && query && <p className="text-sm text-muted">{t("noMatch")}</p>}
+
       {byGroup.map(({ group, subjects }) => (
         <section key={group.id} className="flex flex-col gap-2">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">{groupsT(group.labelKey)}</h2>
@@ -571,10 +617,10 @@ export function SubjectsStep({ draft, update, showError }: StepProps) {
                       label={def.name}
                       value={sel.level}
                       onChange={(l) => setLevel(def.id, l)}
-                      options={def.levels.map((l) => ({ value: l, label: levelsT(l) }))}
+                      options={def.levels.map((l) => ({ value: l, label: levelLabel(l) }))}
                     />
                   )}
-                  {sel && def.levels.length === 1 && <Chip>{levelsT(def.levels[0])}</Chip>}
+                  {sel && def.levels.length === 1 && def.levels[0] !== "None" && <Chip>{levelLabel(def.levels[0])}</Chip>}
                 </div>
               );
             })}

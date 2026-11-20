@@ -43,7 +43,7 @@ export function ResourceFinder() {
 
   const enrollment = profile.enrollments.find((e) => e.subjectId === subject);
   const units = enrollment ? unitsFor(profile.packId, enrollment.subjectId) : [];
-  const course = enrollment ? `${pack?.id === "ib-dp" ? "IB " : pack?.id === "american-hs" ? "" : ""}${enrollment.name}${enrollment.level && enrollment.level !== "None" ? ` ${enrollment.level}` : ""}` : "";
+  const course = enrollment ? `${pack?.id === "ib-dp" || pack?.id === "ib-cp" ? "IB " : pack?.id === "ib-myp" ? "IB MYP " : ""}${enrollment.name}${enrollment.level && enrollment.level !== "None" ? ` ${enrollment.level}` : ""}` : "";
 
   const search = async () => {
     setBusy(true);

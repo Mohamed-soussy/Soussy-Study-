@@ -8,7 +8,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useCurrentProfile } from "@/components/shell/profile-context";
 import { Button } from "@/components/ui/button";
 import { Card, Chip, EmptyState, Input, PageHeader, Select } from "@/components/ui/primitives";
-import { getPack } from "@/curriculum";
+import { curriculumName, getPack } from "@/curriculum";
 import { lessonKey, type Lesson } from "@/lib/whiteboard/types";
 import type { PickedShape } from "@/components/whiteboard/player";
 import { TeacherPicker } from "@/components/teachers/teacher-picker";
@@ -136,7 +136,7 @@ function WhiteboardPage() {
           topic: tp,
           subject: enrollment?.name,
           level: enrollment && enrollment.level !== "None" ? enrollment.level : undefined,
-          curriculum: pack?.id === "ib-dp" ? "IB Diploma" : pack?.id === "american-hs" ? "American high school" : undefined,
+          curriculum: curriculumName(pack?.id),
           language: locale,
         }),
       });

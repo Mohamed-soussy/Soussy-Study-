@@ -111,7 +111,7 @@ export default function SettingsPage() {
                   <li key={e.subjectId}>
                     <Chip color={subjectColor(e.color)}>
                       {e.name}
-                      {e.level !== "None" && <span className="text-muted">{levelsT(e.level)}</span>}
+                      {e.level !== "None" && <span className="text-muted">{levelsT.has(e.level) ? levelsT(e.level) : e.level}</span>}
                     </Chip>
                   </li>
                 ))}

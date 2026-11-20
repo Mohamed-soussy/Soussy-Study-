@@ -49,6 +49,19 @@ export const OFFICIAL_PAPERS: Record<string, { label: string; url: string }[]> =
     { label: "IB Store (Follett): official past papers and markschemes", url: "https://www.follettibstore.com/" },
     { label: "IB: subject guides and specimen papers (ask your coordinator for access)", url: "https://www.ibo.org/programmes/diploma-programme/curriculum/" },
   ],
+  "ib-cp": [
+    { label: "IB Store (Follett): official past papers and markschemes", url: "https://www.follettibstore.com/" },
+  ],
+  cambridge: [
+    { label: "Cambridge: past papers, mark schemes and examiner reports (School Support Hub)", url: "https://www.cambridgeinternational.org/programmes-and-qualifications/" },
+  ],
+  edexcel: [
+    { label: "Pearson Edexcel: past papers and mark schemes", url: "https://qualifications.pearson.com/en/support/support-topics/exams/past-papers.html" },
+  ],
+  uk: [
+    { label: "AQA: past papers and mark schemes", url: "https://www.aqa.org.uk/find-past-papers-and-mark-schemes" },
+    { label: "OCR: past papers", url: "https://www.ocr.org.uk/qualifications/past-paper-finder/" },
+  ],
   "american-hs": [
     { label: "AP Central: past free-response questions and scoring guidelines", url: "https://apcentral.collegeboard.org/courses" },
     { label: "College Board: SAT practice tests (Bluebook)", url: "https://satsuite.collegeboard.org/practice" },

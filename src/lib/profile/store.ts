@@ -73,6 +73,7 @@ export async function loadProfile(): Promise<Profile | null> {
     country: row.country ?? undefined,
     city: row.city ?? undefined,
     school: row.school ?? undefined,
+    grade: row.grade ?? undefined,
     curriculumCard: row.curriculum ?? undefined,
     packId: row.pack_id ?? undefined,
     year: row.year ?? undefined,
@@ -122,7 +123,7 @@ export async function saveProfile(p: Profile): Promise<void> {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("not-signed-in");
 
-  const { error } = await supabase.from("profiles").upsert({
+  const row: Record<string, unknown> = {
     id: user.id,
     terms_version: p.termsVersion ?? null,
     terms_accepted_at: p.termsAcceptedAt ?? null,
@@ -145,11 +146,18 @@ export async function saveProfile(p: Profile): Promise<void> {
     onboarding_step: p.onboardingStep,
     onboarded_at: p.onboardedAt ?? null,
     // Phase 6–7 settings: only sent once the student has set them (older databases lack the columns).
+    ...(p.grade !== undefined ? { grade: p.grade } : {}),
     ...(p.nickname !== undefined ? { nickname: p.nickname || null } : {}),
     ...(p.leaderboardOptIn !== undefined ? { leaderboard_opt_in: p.leaderboardOptIn } : {}),
     ...(p.leaderboardRealName !== undefined ? { leaderboard_real_name: p.leaderboardRealName } : {}),
     ...(p.referralCode !== undefined ? { referral_code: p.referralCode } : {}),
-  });
+    };
+  let { error } = await supabase.from("profiles").upsert(row);
+  // A database without the newer columns (a migration not run yet): save everything else.
+  if (error && /column|schema cache/i.test(error.message)) {
+    for (const k of ["grade", "nickname", "leaderboard_opt_in", "leaderboard_real_name", "referral_code"]) delete row[k];
+    ({ error } = await supabase.from("profiles").upsert(row));
+  }
   if (error) throw error;
 
   // Replace enrollments so removed subjects disappear.

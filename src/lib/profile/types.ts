@@ -38,6 +38,8 @@ export interface Profile {
   city?: string;
   school?: string;
 
+  /** School grade, asked before the curriculum: 6–12, or 13 for university / after school. */
+  grade?: number;
   curriculumCard?: string;
   packId?: string;
   year?: string;
