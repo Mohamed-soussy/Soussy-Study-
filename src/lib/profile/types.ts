@@ -52,6 +52,16 @@ export interface Profile {
   hoursPerWeek?: number;
   nextExamDate?: string;
 
+  /** Set by the school or a moderator, never by the student (migrations 0006/0007). */
+  role?: "student" | "teacher" | "moderator";
+  /** Public name for the community vault, rooms, Squads and public leaderboards. */
+  nickname?: string;
+  leaderboardOptIn?: boolean;
+  leaderboardRealName?: boolean;
+  referralCode?: string;
+  /** Set by a guardian's approval link (rooms for under-18s). Read-only for the student. */
+  roomsGuardianOk?: boolean;
+
   /** Index of the next onboarding step, so a student resumes where they stopped. */
   onboardingStep: number;
   onboardedAt?: string;

@@ -4,7 +4,7 @@ import { Columns2, LogOut, PanelLeftClose, PanelLeftOpen, Search, Settings, Smar
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Logo, Wordmark } from "@/components/brand/logo";
 import { ageOn } from "@/lib/profile/types";
 import { signOut } from "@/lib/profile/store";
@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { TimerBubble } from "@/components/session/bubble";
 import { DeviceSync, sendToOtherDevice } from "@/components/devices/device-sync";
 import { SchoolSync } from "@/components/school/school-sync";
-import { NAV, TABS } from "./nav";
+import { TABS, visibleNav } from "./nav";
 import { ProfileContext } from "./profile-context";
 
 const COLLAPSE_KEY = "soussy.sidebar.collapsed";
@@ -112,6 +112,7 @@ function isActive(pathname: string, href: string) {
 
 function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const t = useTranslations("nav");
+  const profile = useContext(ProfileContext);
   const pathname = usePathname();
   return (
     <aside
@@ -128,7 +129,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
       </div>
       <nav aria-label={t("menu")} className="flex-1 overflow-y-auto px-3 py-2">
         <ul className="flex flex-col gap-0.5">
-          {NAV.map((item) => {
+          {visibleNav(profile?.role).map((item) => {
             const active = isActive(pathname, item.href);
             const Icon = item.icon;
             return (

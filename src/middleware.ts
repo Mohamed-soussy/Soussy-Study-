@@ -6,7 +6,7 @@ import { isSupabaseConfigured, SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/sup
 const PROTECTED = [
   "/home", "/calendar", "/hub", "/whiteboard", "/solver", "/vault", "/lessons",
   "/flashcards", "/focus", "/core", "/squads", "/more", "/settings", "/onboarding",
-  "/workspace", "/notes", "/remote", "/scan", "/link",
+  "/workspace", "/notes", "/remote", "/scan", "/link", "/moderate", "/progress", "/rooms", "/teach", "/exam",
 ];
 
 /**

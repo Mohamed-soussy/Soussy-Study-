@@ -300,7 +300,7 @@ export default function LessonsPage() {
                           <AlertTriangle className="size-4" /> {l.error ?? t("failed")}
                         </p>
                       ) : l.status === "processing" ? (
-                        <p className="text-sm text-muted">{t("stopped")}</p>
+                        <p className="text-sm text-muted">{l.media_name === "Teams transcript" ? t("fromTeams") : t("stopped")}</p>
                       ) : null}
                     </div>
                   </Link>

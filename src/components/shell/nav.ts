@@ -11,6 +11,7 @@ import {
   MoreHorizontal,
   PenTool,
   Settings,
+  ShieldCheck,
   Timer,
   Users,
   Video,
@@ -24,7 +25,12 @@ export interface NavItem {
   icon: LucideIcon;
   /** Build phase that delivers the tool (section 16). Undefined = available now. */
   phase?: number;
+  /** Only shown to these roles (staff tools). */
+  roles?: ("teacher" | "moderator")[];
 }
+
+/** Hides staff-only tools from students. */
+export const visibleNav = (role: string | undefined) => NAV.filter((n) => !n.roles || n.roles.includes(role as "teacher"));
 
 /** Sidebar order from section 4. */
 export const NAV: NavItem[] = [
@@ -33,7 +39,7 @@ export const NAV: NavItem[] = [
   { href: "/hub", key: "hub", icon: Library },
   { href: "/whiteboard", key: "whiteboard", icon: PenTool },
   { href: "/solver", key: "solver", icon: Calculator },
-  { href: "/vault", key: "vault", icon: BookMarked, phase: 6 },
+  { href: "/vault", key: "vault", icon: BookMarked },
   { href: "/lessons", key: "lessons", icon: Video },
   { href: "/flashcards", key: "flashcards", icon: Layers },
   { href: "/focus", key: "focus", icon: Timer },
@@ -41,6 +47,7 @@ export const NAV: NavItem[] = [
   { href: "/squads", key: "squads", icon: Users, phase: 7 },
   { href: "/workspace", key: "workspace", icon: Columns2 },
   { href: "/notes", key: "notes", icon: NotebookPen },
+  { href: "/moderate", key: "moderate", icon: ShieldCheck, roles: ["moderator"] },
   { href: "/settings", key: "settings", icon: Settings },
 ];
 

@@ -85,6 +85,12 @@ export async function loadProfile(): Promise<Profile | null> {
     nextExamDate: row.next_exam_date ?? undefined,
     onboardingStep: row.onboarding_step ?? 0,
     onboardedAt: row.onboarded_at ?? undefined,
+    role: row.role ?? "student",
+    nickname: row.nickname ?? undefined,
+    leaderboardOptIn: row.leaderboard_opt_in ?? false,
+    leaderboardRealName: row.leaderboard_real_name ?? false,
+    referralCode: row.referral_code ?? undefined,
+    roomsGuardianOk: row.rooms_guardian_ok ?? false,
     enrollments: (rows ?? []).map(
       (r): Enrollment => ({
         subjectId: r.subject_code,
@@ -138,6 +144,11 @@ export async function saveProfile(p: Profile): Promise<void> {
     next_exam_date: p.nextExamDate || null,
     onboarding_step: p.onboardingStep,
     onboarded_at: p.onboardedAt ?? null,
+    // Phase 6–7 settings: only sent once the student has set them (older databases lack the columns).
+    ...(p.nickname !== undefined ? { nickname: p.nickname || null } : {}),
+    ...(p.leaderboardOptIn !== undefined ? { leaderboard_opt_in: p.leaderboardOptIn } : {}),
+    ...(p.leaderboardRealName !== undefined ? { leaderboard_real_name: p.leaderboardRealName } : {}),
+    ...(p.referralCode !== undefined ? { referral_code: p.referralCode } : {}),
   });
   if (error) throw error;
 

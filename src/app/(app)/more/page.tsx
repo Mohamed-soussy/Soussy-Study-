@@ -1,7 +1,7 @@
 import { ChevronRight } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
-import { NAV, TABS } from "@/components/shell/nav";
+import { TABS, visibleNav } from "@/components/shell/nav";
 import { Card, PageHeader } from "@/components/ui/primitives";
 
 /** Phone "More" tab: every tool not in the bottom bar. */
@@ -9,7 +9,7 @@ export default async function MorePage() {
   const t = await getTranslations("nav");
   const p = await getTranslations("pages");
   const inTabs = new Set(TABS.map((x) => x.href));
-  const items = NAV.filter((n) => !inTabs.has(n.href));
+  const items = visibleNav(undefined).filter((n) => !inTabs.has(n.href));
 
   return (
     <>

@@ -309,7 +309,8 @@
     "expand": "Expand sidebar",
     "menu": "Main menu",
     "workspace": "Split screen",
-    "notes": "Notes"
+    "notes": "Notes",
+    "moderate": "Moderation"
   },
   "home": {
     "morning": "Good morning, {name}.",
@@ -1117,7 +1118,9 @@
       "placeholder": "Ask about this lesson",
       "send": "Send",
       "failed": "Couldn't answer right now."
-    }
+    },
+    "fromTeams": "Imported from Teams. Open it and tap Analyze to find homework and key ideas.",
+    "analyzeNow": "Analyze lesson"
   },
   "school": {
     "origin": {
@@ -1224,5 +1227,204 @@
         "go": "Open Lessons"
       }
     }
+  },
+  "vault": {
+    "title": "Past-student vault",
+    "text": "What students who already took your units used: shared notes, and the best resources on the web.",
+    "tabs": {
+      "community": "Community",
+      "find": "Find resources",
+      "saved": "Saved"
+    },
+    "find": {
+      "intro": "Pick a unit. Soussy Study searches the web and ranks what it finds: official sources first, then trusted study sites, student notes and videos. Cards link to the original; nothing is copied.",
+      "subject": "Subject",
+      "unit": "Unit",
+      "pickUnit": "Pick a unit",
+      "unitPlaceholder": "e.g. Electromagnetic induction",
+      "topic": "Topic",
+      "topicPlaceholder": "e.g. Lenz's law",
+      "optional": "optional",
+      "want": "Looking for",
+      "wants": {
+        "all": "Everything",
+        "notes": "Notes",
+        "questions": "Practice questions",
+        "video": "Videos",
+        "past_papers": "Past papers"
+      },
+      "search": "Find resources",
+      "failed": "Couldn't search right now. Try again in a minute.",
+      "demo": "Demo data: web search isn't connected yet (TAVILY_API_KEY).",
+      "officialTitle": "Official past papers",
+      "officialText": "Past papers belong to the IB and College Board, so Soussy Study never hosts them. Get them here, or ask your school library.",
+      "none": "Nothing useful found",
+      "noneText": "Try a shorter unit name, or a topic inside it.",
+      "tier": {
+        "1": "Official",
+        "2": "Trusted study site",
+        "3": "Student-made",
+        "4": "Video"
+      },
+      "types": {
+        "notes": "Notes",
+        "questions": "Questions",
+        "video": "Video",
+        "past_paper_style": "Exam-style",
+        "explainer": "Explainer",
+        "other": "Other"
+      },
+      "general": "General",
+      "why": "Why it's useful:",
+      "open": "Open",
+      "save": "Save to my vault",
+      "saved": "Saved",
+      "questions": "Make questions from this",
+      "questionsTitle": "Practice questions",
+      "questionsNote": "Original questions in the style of \"{title}\", written by the AI. Not copied from the resource or any past paper.",
+      "close": "Close"
+    },
+    "community": {
+      "subject": "Subject",
+      "unit": "Unit",
+      "anyUnit": "Any unit",
+      "kind": "Type",
+      "allKinds": "All types",
+      "kinds": {
+        "notes": "Notes",
+        "cheat_sheet": "Cheat sheet",
+        "mind_map": "Mind map",
+        "flashcards": "Flashcard deck",
+        "traps": "Traps I fell into"
+      },
+      "shareButton": "Share a note",
+      "shareTitle": "Share with other students",
+      "shareIntro": "Share your own notes, cheat sheets, mind maps, decks or \"traps I fell into\". The AI checks every upload first (on topic, readable, not copied, no personal details). You get points when it's published.",
+      "title": "Title",
+      "body": "Your note",
+      "bodyHint": "Markdown and math ($E=mc^2$) work. Write it in your own words.",
+      "fromFiles": "Use text from my files…",
+      "addImage": "Add an image (mind map)",
+      "nickname": "Name shown to others",
+      "nicknameHint": "A nickname is best. Don't use your full name.",
+      "needTitle": "Give it a title (3+ characters).",
+      "needBody": "Write at least a few lines, or add an image.",
+      "needNickname": "Pick a nickname to show with your note.",
+      "share": "Check and share",
+      "checking": "Checking…",
+      "published": "Published! Thanks for helping other students. +25 XP",
+      "held": "Thanks! A moderator will take a quick look before it's shared.",
+      "notAccepted": "This one can't be shared.",
+      "checkLater": "Saved. It will be checked and shared soon.",
+      "failed": "Something went wrong. Try again.",
+      "mergeText": "Merge the top {count} notes into one clean summary",
+      "merge": "Merge the top 3",
+      "mergedTitle": "Master summary",
+      "empty": "No shared notes for {subject} yet",
+      "emptyText": "Be the first: share notes for a unit you've finished.",
+      "noRatings": "No ratings yet",
+      "mine": "Your shared notes",
+      "pointsNote": "Every published note earns points toward your level and the contributor certificate on your Progress page.",
+      "status": {
+        "pending": "Waiting for a check",
+        "approved": "Published",
+        "rejected": "Not accepted",
+        "removed": "Removed"
+      },
+      "badges": {
+        "top": "Top-rated",
+        "teacher": "Teacher-approved",
+        "scored": "Scored {grade}"
+      },
+      "rate": "Rate it",
+      "yourRating": "Your rating",
+      "stars": "{n} out of 5 stars",
+      "starsN": "{n} stars",
+      "verify": "Verify as a teacher",
+      "verified": "Marked as teacher-approved.",
+      "report": "Report",
+      "reason": "Reason",
+      "reasons": {
+        "wrong": "Wrong information",
+        "copied": "Copied from a book or past paper",
+        "personal": "Personal information",
+        "rude": "Rude or bullying",
+        "unsafe": "Unsafe content",
+        "other": "Something else",
+        "nudity": "Nudity or sexual content",
+        "smoking": "Smoking, vaping or drugs",
+        "weapons": "Weapons or violence",
+        "gesture": "Rude gesture or symbol",
+        "bullying": "Bullying"
+      },
+      "sendReport": "Send report",
+      "reported": "Thanks. A moderator will look at it.",
+      "proveTitle": "Earn a \"Scored\" badge",
+      "proveText": "Upload a screenshot of your final result. A moderator checks it; the badge is never self-declared, and the screenshot is only seen by moderators.",
+      "grade": "Grade",
+      "screenshot": "Result screenshot",
+      "sendProof": "Send for review",
+      "proofSent": "Sent. A moderator will check it.",
+      "delete": "Delete my note",
+      "deleteConfirm": "Delete this note for everyone?",
+      "close": "Close"
+    },
+    "saved": {
+      "empty": "Nothing saved yet",
+      "emptyText": "Save useful links from Find resources; add your own notes to each.",
+      "notes": "My notes",
+      "notesPlaceholder": "Your notes about this resource",
+      "remove": "Remove"
+    }
+  },
+  "moderate": {
+    "title": "Moderation",
+    "text": "Notes the AI held back, reports from students, and grade proofs. Be kind and quick.",
+    "demo": "Demo: this shows what moderators see.",
+    "onlyModerators": "For moderators only",
+    "onlyModeratorsText": "Ask the app owner to make you a moderator.",
+    "notes": "Waiting for review ({count})",
+    "reports": "Reports ({count})",
+    "proofs": "Grade proofs ({count})",
+    "nothing": "Nothing waiting.",
+    "verdict": {
+      "approve": "AI: fine",
+      "hold": "AI: needs a human",
+      "reject": "AI: reject"
+    },
+    "flags": {
+      "copied_material": "Maybe copied",
+      "personal_data": "Personal data",
+      "unsafe": "Unsafe",
+      "off_topic": "Off topic"
+    },
+    "approve": "Approve",
+    "reject": "Reject",
+    "kinds": {
+      "note": "Note",
+      "room": "Study room",
+      "squad_message": "Squad message",
+      "user": "User"
+    },
+    "reasons": {
+      "wrong": "Wrong information",
+      "copied": "Copied from a book or past paper",
+      "personal": "Personal information",
+      "rude": "Rude or bullying",
+      "unsafe": "Unsafe content",
+      "other": "Something else",
+      "nudity": "Nudity or sexual content",
+      "smoking": "Smoking, vaping or drugs",
+      "weapons": "Weapons or violence",
+      "gesture": "Rude gesture or symbol",
+      "bullying": "Bullying"
+    },
+    "removeNote": "Remove note",
+    "strike": "Give a strike",
+    "permanent": "Permanent ban",
+    "dismiss": "Dismiss",
+    "strikeRules": "Strikes: 1st = 24-hour room ban, 2nd = 7 days, 3rd = permanent. Sexual content involving a minor: permanent ban at once, keep the evidence, and report it to the authorities as the law requires.",
+    "claims": "Claims a final grade of {grade}",
+    "approveBadge": "Give the badge"
   }
 }

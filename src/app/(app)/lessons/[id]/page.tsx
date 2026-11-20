@@ -291,6 +291,8 @@ function LessonPage() {
   const running = isRunning(lesson.id);
   const itemEvents = lesson.items.map((it) => ({ it, ev: events.find((e) => e.id === it.event_id) }));
   const stopped = lesson.status === "processing" && !running;
+  // Teams Level 3 imports class transcripts in the background; the analysis runs here.
+  const fromTeams = stopped && lesson.media_name === "Teams transcript" && !lesson.items.length;
   const notes = lessonNotes(lesson);
 
   const retry = () =>
@@ -420,12 +422,12 @@ function LessonPage() {
 
       {(running || stopped || lesson.status === "error") && (
         <Card className="flex flex-col gap-3 p-4">
-          {running && job ? <JobProgress job={job} /> : <p className={cn("text-sm", lesson.status === "error" ? "text-danger" : "text-muted")}>{lesson.status === "error" ? lesson.error : t("stopped")}</p>}
+          {running && job ? <JobProgress job={job} /> : <p className={cn("text-sm", lesson.status === "error" ? "text-danger" : "text-muted")}>{lesson.status === "error" ? lesson.error : fromTeams ? t("fromTeams") : t("stopped")}</p>}
           {running && <p className="text-sm text-muted">{t("keepOpen")}</p>}
           {!running && (hasMedia || lesson.transcript.length > 0) && (
             <Button variant="outline" className="self-start" onClick={retry}>
               <RotateCcw aria-hidden />
-              {t("retry")}
+              {fromTeams ? t("analyzeNow") : t("retry")}
             </Button>
           )}
         </Card>

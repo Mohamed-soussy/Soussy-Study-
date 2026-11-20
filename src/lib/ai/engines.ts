@@ -40,6 +40,12 @@ export const ROUTES = {
   lesson: { engine: "groq", data: "personal", models: ["openai/gpt-oss-120b", "openai/gpt-oss-20b"] },
   /** Reading assignment text a student pasted from school (section 10.1, Level 1). */
   schoolParse: { engine: "groq", data: "personal", models: ["openai/gpt-oss-20b", "openai/gpt-oss-120b"] },
+  /** Resource finder: summaries of PUBLIC web pages and original practice questions (section 9.1). */
+  resources: { engine: "gemini", data: "public", models: ["gemini-3.1-flash-lite", "gemini-3-flash-preview"] },
+  /** Community vault: checking and merging notes students wrote (personal until approved). */
+  community: { engine: "groq", data: "personal", models: ["openai/gpt-oss-20b", "openai/gpt-oss-120b"] },
+  /** Phase 7: mock exams, rubric feedback, teach-back, core workspace helpers (the student's work). */
+  coach: { engine: "groq", data: "personal", models: ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"] },
   whiteboardLesson: {
     engine: "gemini",
     data: "public",

@@ -70,7 +70,7 @@ export default function SchoolItPage() {
         </table>
         <p className="mt-2 text-sm text-muted">
           Not requested: any write permission, mail, chats, channel messages, other users&apos; data, grades. A later, optional level (only with your approval) would add meeting
-          transcripts and recordings (OnlineMeetingTranscript.Read.All, OnlineMeetingRecording.Read.All) so class recordings can be summarized for the student.
+          transcripts and recordings (OnlineMeetings.Read, OnlineMeetingTranscript.Read.All) so class recordings can be summarized for the student.
         </p>
       </section>
 
