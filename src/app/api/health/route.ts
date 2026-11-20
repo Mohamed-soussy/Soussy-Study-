@@ -80,7 +80,7 @@ export async function GET() {
         }),
       );
       const body = (await r.json().catch(() => ({}))) as { error?: { message?: string; status?: string } };
-      add("gemini", r.ok, r.ok ? `Works (${model}).` : `Gemini said: ${body.error?.status ?? r.status} ${body.error?.message ?? ""}`.slice(0, 300), r.ok ? undefined : r.status === 400 || r.status === 403 ? "The key is wrong or for the wrong project: make a new one at aistudio.google.com (it starts with AIza), paste it into Vercel, redeploy." : r.status === 429 ? "Free-tier limit reached for now; try later." : "Try again later.");
+      add("gemini", r.ok, r.ok ? `Works (${model}).` : `Gemini said: ${body.error?.status ?? r.status} ${body.error?.message ?? ""}`.slice(0, 300), r.ok ? undefined : r.status === 400 || r.status === 403 ? "The key is wrong or for the wrong project: make a new one at aistudio.google.com, paste it into Vercel, redeploy." : r.status === 429 ? "Free-tier limit reached for now; try later." : "Try again later.");
     } catch (e) {
       add("gemini", false, e instanceof Error ? e.message : "No answer.");
     }
