@@ -114,5 +114,21 @@ export async function GET() {
   // 7. Microsoft and background sync (optional)
   add("microsoft", env("MS_CLIENT_ID") && env("MS_CLIENT_SECRET") ? true : null, env("MS_CLIENT_ID") && env("MS_CLIENT_SECRET") ? "Connect Microsoft is set up." : "Optional: not set up (Connect Microsoft shows demo data).", "Register an app in Microsoft Entra (steps in .env.example): MS_CLIENT_ID, MS_CLIENT_SECRET.");
   add("level3", env("MS_LEVEL3") && env("CRON_SECRET") ? true : null, env("MS_LEVEL3") ? "Teams Level 3 is on." : "Optional: off until KiS IT approves.", "After IT approval: MS_LEVEL3=1, CRON_SECRET, and the cron block at the end of migration 0006.");
-  return NextResponse.json({ checks, at: new Date().toISOString() });
+  // Which deployment is this, and which key NAMES can it see (never values)? Catches typos,
+  // keys saved in another Vercel project, and keys added without a redeploy.
+  const wanted = ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "GROQ_API_KEY", "GEMINI_API_KEY", "TAVILY_API_KEY"];
+  const looksLikeKey = /supabase|groq|gemini|tavily|google|api_?key|_key$|secret/i;
+  const seen = Object.keys(process.env).filter((k) => looksLikeKey.test(k) && !k.startsWith("npm_"));
+  const deployment = {
+    env: process.env.VERCEL_ENV ?? "local",
+    commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
+    project: process.env.VERCEL_PROJECT_PRODUCTION_URL ?? null,
+    url: process.env.VERCEL_URL ?? null,
+    present: wanted.filter((k) => !!process.env[k]?.trim()),
+    missing: wanted.filter((k) => !process.env[k]?.trim()),
+    // Names that look like keys but aren't the exact names we read (e.g. a space or wrong case).
+    otherNames: seen.filter((k) => !wanted.includes(k)),
+    emptyOrSpaces: wanted.filter((k) => process.env[k] !== undefined && process.env[k] !== process.env[k]!.trim()),
+  };
+  return NextResponse.json({ checks, deployment, at: new Date().toISOString() });
 }
