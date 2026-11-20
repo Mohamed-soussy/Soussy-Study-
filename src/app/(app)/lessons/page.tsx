@@ -177,6 +177,7 @@ export default function LessonsPage() {
             accept={ACCEPT}
             className="sr-only"
             id="lesson-file"
+            aria-label={t("add.upload")}
             onChange={(e) => {
               const f = e.target.files?.[0] ?? null;
               setFile(f);

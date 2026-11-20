@@ -399,7 +399,7 @@ export function ConnectionsPanel() {
             </button>
             {preview && (
               <div className="rounded-[10px] border border-dashed border-warning p-3">
-                <p className="mb-2 inline-block rounded-full bg-warning/15 px-2 py-0.5 text-xs font-semibold text-warning">{t("demoData")}</p>
+                <p className="mb-2 inline-block rounded-full bg-warning/15 px-2 py-0.5 text-xs font-semibold text-text">{t("demoData")}</p>
                 <ul className="flex flex-col gap-1.5 text-sm">
                   {DEMO_PREVIEW.map((d) => (
                     <li key={d.title}>

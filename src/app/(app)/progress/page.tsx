@@ -29,9 +29,14 @@ export default function ProgressPage() {
   const [importing, setImporting] = useState(false);
   const [note, setNote] = useState("");
 
+  // Both load together so the page appears once, without shifting (layout stability).
   const load = useCallback(() => {
-    loadProgress().then(setP).catch(() => {});
-    masteryByUnit().then(setMastery).catch(() => {});
+    Promise.all([loadProgress(), masteryByUnit().catch(() => [])])
+      .then(([prog, m]) => {
+        setMastery(m);
+        setP(prog);
+      })
+      .catch(() => {});
   }, []);
   useEffect(() => {
     load();
@@ -72,8 +77,9 @@ export default function ProgressPage() {
       <PageHeader title={t("title")} text={t("text")} />
 
       {p === null ? (
-        <div className="h-32 animate-pulse rounded-[var(--radius-card)] bg-surface-2" />
+        <div className="min-h-[120dvh] animate-pulse rounded-[var(--radius-card)] bg-surface-2" aria-busy="true" />
       ) : (
+        <>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="flex flex-col gap-2 p-4">
             <span className="flex items-center gap-2 text-sm text-muted">
@@ -115,7 +121,6 @@ export default function ProgressPage() {
             </Link>
           </Card>
         </div>
-      )}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <Card className="p-4">{p && <StudyChart days={p.days} />}</Card>
@@ -150,7 +155,7 @@ export default function ProgressPage() {
               {b.earned ? <Award className="size-7 text-warning" aria-hidden /> : <Lock className="size-7 text-muted" aria-hidden />}
               <span className="text-sm font-medium">{t(`badges.${b.id}`)}</span>
               {!b.earned && (
-                <span className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2" aria-label={`${Math.round(b.progress * 100)}%`}>
+                <span className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(b.progress * 100)} aria-label={t(`badges.${b.id}`)}>
                   <span className="block h-full rounded-full bg-primary" style={{ width: `${b.progress * 100}%` }} />
                 </span>
               )}
@@ -161,6 +166,8 @@ export default function ProgressPage() {
       </Card>
 
       <Leaderboards />
+        </>
+      )}
       <p className="text-xs text-muted">
         <Button variant="ghost" size="sm" asChild>
           <Link href="/settings#invite">{t("invite")}</Link>

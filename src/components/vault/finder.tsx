@@ -133,7 +133,7 @@ export function ResourceFinder() {
       </Card>
 
       {data?.demo && (
-        <p className="self-start rounded-full bg-warning/15 px-3 py-1 text-sm font-medium text-warning">{t("demo")}</p>
+        <p className="self-start rounded-full bg-warning/15 px-3 py-1 text-sm font-medium text-text">{t("demo")}</p>
       )}
 
       {data && data.official.length > 0 && (

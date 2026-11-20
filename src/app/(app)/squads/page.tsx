@@ -27,7 +27,7 @@ export default function SquadsPage() {
   return (
     <>
       <PageHeader title={t("title")} text={t("text")} />
-      {repo.mode === "demo" && <p className="self-start rounded-full bg-warning/15 px-3 py-1 text-sm font-medium text-warning">{t("demo")}</p>}
+      {repo.mode === "demo" && <p className="self-start rounded-full bg-warning/15 px-3 py-1 text-sm font-medium text-text">{t("demo")}</p>}
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="flex flex-col gap-3 p-4">
           <h2 className="font-semibold">{t("create")}</h2>

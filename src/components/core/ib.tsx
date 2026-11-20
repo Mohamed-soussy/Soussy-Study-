@@ -107,18 +107,18 @@ export function TokPanel() {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Card className="flex flex-col gap-3 p-4">
-        <h3 className="font-semibold">{t("kqTitle")}</h3>
+        <h2 className="font-semibold">{t("kqTitle")}</h2>
         <Helper task="kq" label={t("kqLabel")} placeholder={t("kqPlaceholder")} onSave={(input, text) => kq.add({ input, text })} />
         <SavedList items={kq.items} onRemove={kq.remove} />
       </Card>
       <Card className="flex flex-col gap-3 p-4">
-        <h3 className="font-semibold">{t("essayTitle")}</h3>
+        <h2 className="font-semibold">{t("essayTitle")}</h2>
         <p className="text-sm text-muted">{t("essayText")}</p>
         <Helper task="essay" label={t("essayLabel")} placeholder={t("essayPlaceholder")} onSave={(input, text) => essays.add({ input, text })} />
         <SavedList items={essays.items} onRemove={essays.remove} />
       </Card>
       <Card className="flex flex-col gap-3 p-4 lg:col-span-2">
-        <h3 className="font-semibold">{t("exTitle")}</h3>
+        <h2 className="font-semibold">{t("exTitle")}</h2>
         <p className="text-sm text-muted">{t("exText")}</p>
         <Field label={t("exPrompt")} htmlFor="ex-prompt">
           <Input id="ex-prompt" value={data.prompt} onChange={(e) => setData({ ...data, prompt: e.target.value })} placeholder={t("exPromptPlaceholder")} dir="auto" />
@@ -234,7 +234,7 @@ export function EePanel() {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Card className="flex flex-col gap-3 p-4">
-        <h3 className="font-semibold">{t("rqTitle")}</h3>
+        <h2 className="font-semibold">{t("rqTitle")}</h2>
         <p className="text-sm text-muted">{t("about", { subject: profile.eeSubject ?? "—", supervisor: profile.eeSupervisor ?? "—" })}</p>
         <Field label={t("rq")} htmlFor="ee-rq">
           <textarea id="ee-rq" defaultValue={d.rq} onBlur={(e) => e.target.value !== d.rq && save({ rq: e.target.value })} rows={2} className={area} dir="auto" />
@@ -243,7 +243,7 @@ export function EePanel() {
       </Card>
 
       <Card className="flex flex-col gap-3 p-4">
-        <h3 className="font-semibold">{t("wordsTitle")}</h3>
+        <h2 className="font-semibold">{t("wordsTitle")}</h2>
         <div className="flex items-center gap-3">
           <span className="text-3xl font-bold tabular-nums">{words.toLocaleString(locale)}</span>
           <span className="text-muted">/ 4,000</span>
@@ -256,7 +256,7 @@ export function EePanel() {
           <Input type="number" min={0} value={count} onChange={(e) => setCount(e.target.value)} placeholder={t("logWords")} aria-label={t("logWords")} className="h-9 w-40" />
           <Button size="sm" type="submit" variant="outline" className="h-9">{t("log")}</Button>
         </form>
-        <h4 className="mt-2 text-sm font-semibold">{t("milestones")}</h4>
+        <h3 className="mt-2 text-sm font-semibold">{t("milestones")}</h3>
         <ul className="flex flex-col gap-1.5">
           {EE_MILESTONES.map((m) => (
             <li key={m} className="flex items-center justify-between gap-2 text-sm">
@@ -272,7 +272,7 @@ export function EePanel() {
       </Card>
 
       <Card className="flex flex-col gap-3 p-4">
-        <h3 className="font-semibold">{t("rppfTitle")}</h3>
+        <h2 className="font-semibold">{t("rppfTitle")}</h2>
         <p className="text-sm text-muted">{t("rppfText")}</p>
         {(["initial", "interim", "final"] as const).map((k) => (
           <Field key={k} label={t(`r.${k}`)} htmlFor={`rppf-${k}`} hint={t("words", { n: refWords(d.reflections[k] ?? "") })}>
@@ -284,7 +284,7 @@ export function EePanel() {
 
       <Card className="flex flex-col gap-3 p-4">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="font-semibold">{t("sourcesTitle")}</h3>
+          <h2 className="font-semibold">{t("sourcesTitle")}</h2>
           <Select value={style} onChange={(e) => setStyle(e.target.value as "mla" | "apa")} className="h-8 w-auto" aria-label={t("style")}>
             <option value="mla">MLA 9</option>
             <option value="apa">APA 7</option>
@@ -381,7 +381,7 @@ export function CasPanel() {
         ))}
       </div>
       <Card className="flex flex-col gap-2 p-4">
-        <h3 className="font-semibold">{t("outcomesTitle")}</h3>
+        <h2 className="font-semibold">{t("outcomesTitle")}</h2>
         <ul className="grid gap-1.5 sm:grid-cols-2">
           {CAS_OUTCOMES.map((o) => (
             <li key={o} className="flex items-center gap-2 text-sm">
@@ -393,7 +393,7 @@ export function CasPanel() {
       </Card>
 
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="me-auto font-semibold">{t("experiences", { n: exps.items.length })}</h3>
+        <h2 className="me-auto font-semibold">{t("experiences", { n: exps.items.length })}</h2>
         <Button variant="outline" onClick={() => window.print()}>
           <Printer aria-hidden />
           {t("export")}
@@ -482,7 +482,7 @@ export function CasPanel() {
       </ul>
 
       <Card className="flex flex-col gap-3 p-4">
-        <h3 className="font-semibold">{t("projectTitle")}</h3>
+        <h2 className="font-semibold">{t("projectTitle")}</h2>
         <Input
           defaultValue={proj?.data.title ?? ""}
           placeholder={t("projectName")}

@@ -623,7 +623,7 @@ function LessonPage() {
                           {clock(k.at)}
                         </button>
                         <span>
-                          {k.kind === "stressed" && <span className="me-1 rounded bg-warning/15 px-1 text-xs font-medium text-warning">{t("stressed")}</span>}
+                          {k.kind === "stressed" && <span className="me-1 rounded bg-warning/15 px-1 text-xs font-medium text-text">{t("stressed")}</span>}
                           {k.kind === "question" && <span className="me-1 rounded bg-surface-2 px-1 text-xs font-medium">{t("question")}</span>}
                           {k.text}
                         </span>

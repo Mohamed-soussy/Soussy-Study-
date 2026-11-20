@@ -10,7 +10,8 @@ import "./globals.css";
 // JetBrains Mono (code and math input), IBM Plex Sans Arabic (Arabic).
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta", display: "swap" });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
-const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains", display: "swap" });
+// Only the two Latin families are preloaded; the others load when a page uses them (speed).
+const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains", display: "swap", preload: false });
 /** Accessibility option: a typeface designed for low vision and dyslexia (section 12.5). */
 const readable = Atkinson_Hyperlegible({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-readable", display: "swap", preload: false });
 const arabic = IBM_Plex_Sans_Arabic({
@@ -18,6 +19,7 @@ const arabic = IBM_Plex_Sans_Arabic({
   weight: ["400", "500", "600", "700"],
   variable: "--font-arabic",
   display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {

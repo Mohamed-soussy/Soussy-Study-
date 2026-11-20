@@ -143,7 +143,7 @@ export function Leaderboards() {
               <option value="all">{t("all")}</option>
             </Select>
           </div>
-          {!sb && <p className="self-start rounded-full bg-warning/15 px-3 py-0.5 text-xs font-medium text-warning">{t("demo")}</p>}
+          {!sb && <p className="self-start rounded-full bg-warning/15 px-3 py-0.5 text-xs font-medium text-text">{t("demo")}</p>}
           {rows && rows.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[480px] text-sm">

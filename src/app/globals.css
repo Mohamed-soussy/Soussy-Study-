@@ -14,13 +14,13 @@
   --primary: #4f46e5;
   --primary-soft: #eef2ff;
   --on-primary: #ffffff;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  --success: #047857; /* 4.5:1+ as text on every light surface (accessibility audit) */
+  --warning: #b45309;
+  --danger: #c81e1e;
   --submission: #8b5cf6;
   --event: #14b8a6;
   --text: #0f172a;
-  --muted: #64748b;
+  --muted: #5b6b80;
 
   /* 8 soft subject hues (section 2: "every subject gets its own color") */
   --subject-1: #6366f1;

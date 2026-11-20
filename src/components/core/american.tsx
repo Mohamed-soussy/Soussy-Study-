@@ -144,7 +144,7 @@ export function ApPanel() {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Card className="flex flex-col gap-3 p-4">
-        <h3 className="font-semibold">{t("examsTitle")}</h3>
+        <h2 className="font-semibold">{t("examsTitle")}</h2>
         <p className="text-sm text-muted">{t("examsText")}</p>
         <ul className="flex flex-col gap-1.5">
           {[...exams.items].sort((a, b) => a.data.date.localeCompare(b.data.date)).map((e) => {
@@ -168,7 +168,7 @@ export function ApPanel() {
       </Card>
 
       <Card className="flex flex-col gap-3 p-4">
-        <h3 className="font-semibold">{t("testTitle")}</h3>
+        <h2 className="font-semibold">{t("testTitle")}</h2>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <Field label={t("test")} htmlFor="tp-which">
             <Select id="tp-which" value={test.which} onChange={(e) => setTest({ ...test, which: e.target.value })}><option>SAT</option><option>ACT</option></Select>
@@ -207,7 +207,7 @@ export function ApPanel() {
       </Card>
 
       <Card className="flex flex-col gap-3 p-4 lg:col-span-2">
-        <h3 className="font-semibold">{t("collegesTitle")}</h3>
+        <h2 className="font-semibold">{t("collegesTitle")}</h2>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[520px] text-sm">
             <thead>

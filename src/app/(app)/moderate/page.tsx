@@ -55,7 +55,7 @@ export default function ModeratePage() {
   return (
     <>
       <PageHeader title={t("title")} text={t("text")} />
-      {repo.mode === "demo" && <p className="self-start rounded-full bg-warning/15 px-3 py-1 text-sm font-medium text-warning">{t("demo")}</p>}
+      {repo.mode === "demo" && <p className="self-start rounded-full bg-warning/15 px-3 py-1 text-sm font-medium text-text">{t("demo")}</p>}
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">{t("notes", { count: queue.length })}</h2>

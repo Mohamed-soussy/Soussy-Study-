@@ -80,7 +80,7 @@ export function RubricFeedback({ defaultRubric = "ib_sci_ia" }: { defaultRubric?
       </Card>
       {fb && (
         <Card className="flex flex-col gap-4 p-4">
-          <p className="self-start rounded-full bg-warning/15 px-3 py-1 text-sm font-semibold text-warning">{fb.band}</p>
+          <p className="self-start rounded-full bg-warning/15 px-3 py-1 text-sm font-semibold text-text">{fb.band}</p>
           <ul className="flex flex-col gap-3">
             {fb.criteria.map((c) => (
               <li key={c.name} className="flex flex-col gap-1">

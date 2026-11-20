@@ -58,7 +58,7 @@ export function QuickAddBar({ enrollments, onAdd }: { enrollments: Enrollment[];
             className="h-12 w-full rounded-[12px] border border-border bg-surface ps-9 pe-3 text-base text-text placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
           />
         </div>
-        <Button type="submit" size="lg" disabled={!text.trim()}>
+        <Button type="submit" size="lg" disabled={!text.trim()} aria-label={t("add")}>
           <Plus aria-hidden />
           <span className="hidden sm:inline">{t("add")}</span>
         </Button>

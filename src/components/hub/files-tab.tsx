@@ -205,7 +205,7 @@ export function FilesTab() {
             <Upload aria-hidden />
             {t("upload")}
           </Button>
-          <Button variant="outline" onClick={() => cameraInput.current?.click()}>
+          <Button variant="outline" onClick={() => cameraInput.current?.click()} aria-label={t("camera")}>
             <Camera aria-hidden />
             <span className="hidden sm:inline">{t("camera")}</span>
           </Button>

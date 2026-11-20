@@ -5,11 +5,11 @@ import katex from "katex";
 import "katex/contrib/mhchem";
 import { AlertTriangle, BadgeCheck, Camera, ChevronDown, FileText, HelpCircle, Keyboard, Loader2, PenTool, RotateCcw, Sparkles } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Markdown } from "@/components/hub/markdown";
 import { useCurrentProfile } from "@/components/shell/profile-context";
-import { FunctionGraph } from "@/components/solver/graph";
 import { Button } from "@/components/ui/button";
 import { Card, Chip, Input, PageHeader, Select } from "@/components/ui/primitives";
 import { getPack } from "@/curriculum";
@@ -17,9 +17,11 @@ import { getRepo } from "@/lib/data/repo";
 import { getRepo3, type Mistake, type Prefs, type SavedSolution } from "@/lib/data/repo3";
 import type { VaultFile } from "@/lib/data/types";
 import type { SimilarProblem, SolveResponse } from "@/lib/solver/types";
-import { sameAnswer } from "@/lib/solver/verify";
 import { cn } from "@/lib/utils";
 import { awardXp } from "@/lib/progress/xp";
+
+// The graph and the answer checker use the math engine (mathjs, ~600 kB): load it only when needed.
+const FunctionGraph = dynamic(() => import("@/components/solver/graph").then((m) => m.FunctionGraph), { ssr: false });
 
 /** Renders LaTeX (display or inline); falls back to plain text. */
 function Tex({ math, block }: { math: string; block?: boolean }) {
@@ -234,6 +236,7 @@ export default function SolverPage() {
     const p = similar?.[i];
     const given = answers[i]?.value ?? "";
     if (!p || !given.trim()) return;
+    const { sameAnswer } = await import("@/lib/solver/verify");
     const right = sameAnswer(given, p.answer_value);
     setAnswers((a) => ({ ...a, [i]: { value: given, result: right ? "right" : "wrong" } }));
     if (!right && result) {

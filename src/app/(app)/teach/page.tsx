@@ -107,7 +107,7 @@ export default function TeachPage() {
   return (
     <>
       <PageHeader title={isTeacher ? t("titleTeacher") : t("titleStudent")} text={isTeacher ? t("textTeacher") : t("textStudent")} />
-      {repo.mode === "demo" && <p className="self-start rounded-full bg-warning/15 px-3 py-1 text-sm font-medium text-warning">{t("demo")}</p>}
+      {repo.mode === "demo" && <p className="self-start rounded-full bg-warning/15 px-3 py-1 text-sm font-medium text-text">{t("demo")}</p>}
 
       {isTeacher && (
         <section className="flex flex-col gap-3">
