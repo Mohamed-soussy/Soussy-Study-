@@ -3,11 +3,35 @@
 An AI study platform for IB Diploma and American high school students (and any curriculum),
 built for a CAS project at Khalid International Schools, Riyadh. **Students never pay.**
 
-Built phase by phase from the Master Build Prompt (section 16). Done so far:
+Built phase by phase from the Master Build Prompt (section 16). **All 7 phases are built:**
 
-- **Phase 1 — Foundation:** design system, logo, sign-in, onboarding, app shell, dashboard, English and Arabic.
-- **Phase 2 — Calendar + Study Hub:** smart calendar, file vault, AI tutor with citations, intent cards.
-- **Phase 3 — Solver, flashcards, timer, teachers, split screen, devices:** see below.
+- **Phase 1, Foundation:** design system, logo, sign-in, onboarding, app shell, dashboard, English and Arabic.
+- **Phase 2, Calendar + Study Hub:** smart calendar, file vault, AI tutor with citations, intent cards.
+- **Phase 3:** solver with a Verified badge, flashcards (FSRS), timer bubble, AI teachers, split screen, linked devices.
+- **Phase 4, AI whiteboard:** speaks and draws in sync; pause, circle a shape and ask.
+- **Phase 5:** lesson recording analyzer; school connections Levels 1 and 2 (calendar feeds, pasted text, Microsoft).
+- **Phase 6:** Teams Level 3 (background sync, class transcripts), resource finder, community vault, moderation.
+- **Phase 7:** XP, streaks, badges and leaderboards; study rooms; Squads; teach-back; mock exams and rubric feedback;
+  IB Core and college-prep workspaces; teacher mode; parent view; weekly report; invites; accessibility; privacy tools.
+
+**Deliverables** (section 16): the live site (Vercel), this repository, a 2-minute demo video
+(`docs/soussy-study-demo.mp4`, silent with captions: record a voice-over), the "For school IT" one-pager
+(`docs/for-school-it.pdf`, also live at `/school-it`), and the pilot kit (`docs/pilot.md`). The pilot report itself
+comes from running the 2-week pilot with a KiS class.
+
+## Turn everything on (checklist)
+
+| What | Where | Unlocks |
+| --- | --- | --- |
+| Run `supabase/migrations/0001` … `0007` in order | Supabase → SQL Editor | Accounts and every feature's data |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Vercel env | Real accounts (otherwise demo mode) |
+| `SUPABASE_SERVICE_ROLE_KEY` (server only) | Vercel env | Shared whiteboard cache, note approvals, guardian links, parent view, account deletion, Teams |
+| `GROQ_API_KEY`, `GEMINI_API_KEY` | Vercel env | All AI features |
+| `TAVILY_API_KEY` (free at tavily.com) | Vercel env | Resource finder web search (demo cards without it) |
+| `MS_CLIENT_ID`, `MS_CLIENT_SECRET` (+ optional `MS_TENANT_ID`, `TOKEN_ENCRYPTION_KEY`) | Vercel env, Microsoft Entra app | "Connect Microsoft" (steps in `.env.example`) |
+| `MS_LEVEL3=1`, `CRON_SECRET` + the cron block at the end of `0006` | Vercel env + Supabase (pg_cron, pg_net) | Teams Level 3, only after KiS IT approves |
+| Make a moderator / teacher: `update profiles set role = 'moderator' where id = (select id from auth.users where email = '…');` | Supabase → SQL Editor | Moderation queue, teacher mode |
+| Realtime → Settings → turn off "Allow public access" | Supabase | Private channels for devices, Squads and rooms |
 
 ## Run it
 
@@ -21,7 +45,8 @@ everything works, but it's saved only in that browser.
 
 ## Connect Supabase (real accounts)
 
-1. In Supabase, open **SQL Editor** and run each file in `supabase/migrations/` in order (`0001_…` to `0004_…`).
+1. In Supabase, open **SQL Editor** and run each file in `supabase/migrations/` in order (`0001_…` to `0007_…`).
+   They were tested on Postgres 16 in order and twice (safe to re-run), with the row-level security rules exercised.
 2. Copy **Project Settings → API → anon public key** into `.env.local` as `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    (see `.env.example` for every setting, including the AI keys).
 3. In **Authentication → URL Configuration**, add `http://localhost:3000/auth/callback`
@@ -43,7 +68,13 @@ personal data.** The code refuses to send `personal` data to Gemini even if some
 | Whiteboard question ("interrupt and ask") | Groq | personal | Student's own question |
 | Whiteboard lessons | Gemini (3.1 Flash-Lite → 3 Flash → 3.5 Flash) | public | Syllabus topics, cached and shared; ~2.5 s per lesson |
 | Focus snapshot check | Gemini (3.1 Flash-Lite) | opt-in image | Only if the student turns on cloud checks and accepts the warning |
-| Embeddings (search by meaning) | Hugging Face (BAAI/bge-m3) | personal | Open-source; needs Inference Provider credits |
+| Lesson transcription | Groq Whisper (large-v3-turbo) | personal | Class recordings, in ~2-minute pieces |
+| Lesson analysis, lesson chat, quizzes, pasted school text | Groq (GPT-OSS 120B / 20B) | personal | The student's lessons and messages |
+| Community note checks, Squad chat moderation, "Merge top 3" | Groq (GPT-OSS 20B / 120B) | personal | Student-written content |
+| Mock exams, marking, rubric feedback, teach-back, IB Core helpers | Groq (GPT-OSS 120B → 20B → Qwen) | personal | The student's own work |
+| Study-room spot check, slide reading | Groq (Qwen 3.8 vision) | personal | Images of students never go to Gemini |
+| Resource finder summaries | Gemini (3.1 Flash-Lite) | public | Public web pages about a syllabus unit |
+| Embeddings (search by meaning) | Hugging Face (BAAI/bge-m3) | personal | Off: the Hugging Face key was removed |
 
 Every call has a time limit and falls back to the next model when one is busy. Each student gets 60 AI requests
 a day (`DAILY_AI_LIMIT`); cached whiteboard lessons don't count. Prompts are versioned in `src/prompts/`.
@@ -69,6 +100,47 @@ change speed, captions-only mode, and **interrupt and ask**: pause, tap or circl
   sensitivity, "That was wrong").
 - **Cloud checks (opt-in, off by default):** a 256 px JPEG every 2 minutes to Gemini after a clear warning that
   Google may use it. Rate-limited on the server (1 a minute, 300 a day).
+
+## What's in Phase 6
+
+| Area | Where |
+| --- | --- |
+| Resource finder: searches by curriculum → subject → unit (Tavily), ranks official → trusted study sites → student-made → video, blocks pirate past-paper sites, cards with a 3-line summary and "why it's useful", save to vault with notes, "Make questions from this" (original, never copied), official past-paper stores linked | `src/components/vault/finder.tsx`, `src/app/api/resources/`, `src/lib/resources/trust.ts` |
+| Community vault: share notes, cheat sheets, mind maps, decks, "traps I fell into"; AI check before publishing (on topic, readable, not copied, no personal data, safe); ratings; Top-rated, Teacher-approved and moderator-verified "Scored 7" badges; "Merge the top 3" with citations; reports (2 reports hide a note); points and a contributor certificate | `src/components/vault/community.tsx`, `src/app/api/community/` |
+| Moderation queue (notes, reports, room strikes, grade proofs) | `src/app/(app)/moderate/` |
+| Teams Level 3: background sync every 30 minutes (pg_cron → `/api/cron/school-sync`), class meeting transcripts imported into Lessons, handles "transcripts disabled by the school" | `src/lib/school/ms-fetch.ts`, `src/app/api/cron/` |
+| Database | `supabase/migrations/0006_vault_community.sql` |
+
+## What's in Phase 7
+
+| Area | Where |
+| --- | --- |
+| Progress: XP from real studying, levels, streak with a weekly freeze, 10 badges, 14-day study chart (with table view), weak topics by unit, score-report import (Cognia/MAP), contributor certificate | `src/app/(app)/progress/`, `src/lib/progress/` |
+| Leaderboards (12B): opt-in, nicknames on public boards, verified time only, 10 h/day cap, nothing midnight–5 am, under-13s never public, flagged numbers held | `src/components/progress/leaderboard.tsx`, `leaderboard()` in `0007` |
+| Weekly report and balance check (4+ deadlines in 2 days; sleep message after 11 pm) | `src/components/progress/weekly.tsx` |
+| Practice: timed original mock exams marked against a markscheme, teach-back with "Sam", rubric feedback (IB IA/EE/TOK/English, AP) with 3 fixes, always an estimate | `src/app/(app)/exam/`, `src/prompts/coach.v1.ts` |
+| IB Core: TOK knowledge questions, essay and exhibition planners; EE research-question feedback, word tracker, milestones to calendar, RPPF reflections, MLA/APA citations; CAS log with strands, outcomes, photos, project stages, export | `src/app/(app)/core/`, `src/components/core/ib.tsx` |
+| College prep: GPA with what-if grades, AP countdowns, SAT/ACT plan, college deadlines | `src/components/core/american.tsx` |
+| Study rooms (12A.4–12A.5): cameras only (microphone never requested), age bands, guardian approval link for under-18s, rules checklist, school and friend rooms, background blur, on-device NSFW.js + weapon checks before anything is sent, AI spot check about once a minute, snapshots never stored, fixed reactions, reports and strikes, watermark, 9 people, 3-hour limit | `src/app/(app)/rooms/`, `src/lib/rooms/`, `src/app/guardian/` |
+| Squads: invite-only groups of 8, AI-moderated chat, shared deadlines/links/whiteboard topics, live quiz battles | `src/app/(app)/squads/` |
+| Teacher mode: classes, posts with due dates, anonymous class weak topics (5+ students), verify notes | `src/app/(app)/teach/` |
+| Parent view, invites (+10 AI uses a day each), KiS school page | `src/app/parent/`, `src/app/join/`, `src/app/school/kis/` |
+| Accessibility: readable font, text size, reduced motion, read-aloud in the top bar, captions on whiteboard and lessons | `src/lib/a11y/`, Settings |
+| Privacy: download all my data, delete my account; "How to use AI honestly" | Settings, `src/app/api/account/delete/`, `src/app/honesty/` |
+| Database | `supabase/migrations/0007_phase7.sql` |
+
+## Test results
+
+- **Phase 2:** quick-add dates and subjects, PDF citations to the right page, essay refusal with an outline offer.
+- **Phase 3:** 20/20 solver problems verified; FSRS rescheduling; two-tab linked devices.
+- **Phase 4:** whiteboard first drawing in about 3.4 s, cached replay 0.4 s; circle-and-ask.
+- **Phase 5:** a 45-minute recording with 3 spoken homework items: all 3 found with the right dates (including
+  "next lesson" from the timetable) and working "Heard at" links; a decoy ignored; merged with the same Teams task.
+- **Phase 6:** an unsafe note (phone numbers, selling answers) rejected; good notes published; merge with citations.
+- **Phase 7:** room snapshots shared and cheers delivered between two students; Squad chat blocks personal info and
+  insults; quiz battles; mock exams marked.
+- **Lighthouse** (production build, every page): desktop performance 91–100, accessibility 100, best practices 100;
+  phone accessibility 100, phone performance 80–99 (slow 4G and 4× CPU simulation; the app is mostly rendered in the browser).
 
 ## What's in Phase 5 (and Phase 4)
 
@@ -144,19 +216,21 @@ whole class at once needs Groq's paid Developer tier.
 | App shell: sidebar, top bar, phone tab bar, Home, Settings | `src/components/shell/`, `src/app/(app)/` |
 | Database: `profiles`, `enrollments`, row-level security, under-13 guardian lock | `supabase/migrations/0001_foundation.sql` |
 
-Tools from later phases (Calendar, Study Hub, Whiteboard…) are in the menu and say which phase delivers them.
 
-## Not done yet (needs something from outside)
+## Limits and what needs something from outside
 
-- **Search by meaning** (pgvector + Hugging Face embeddings) is wired but the Hugging Face account has no Inference credits; search uses Postgres full-text search until then.
-- **Scanned PDFs** have no text layer; students upload photos of the pages instead (read privately by Groq).
-- **Teams Level 3** (school-approved app: sync without opening the app, webhooks, meeting recordings), **Google Drive / Classroom / Canvas** connectors: phase 6.
-- **Speaker labels** come from Teams transcripts; Whisper recordings have none.
-- **Two-voice audio summaries** need a text-to-speech key; the script and browser read-aloud work now.
-- **Sharing with a Squad** arrives with Squads in phase 7.
-
-- **Guardian approval emails** for under-13 students: needs an email service. These accounts stay locked until then.
-- **Google / Microsoft sign-in**: needs the OAuth apps above.
-- **School directory**: only KiS is listed; others use "My school is not listed".
-- **Mascot "Sous"**: optional in the spec, not drawn yet.
-- **Download / delete my data**: Phase 7.
+- **Things only you can do:** run the 2-week pilot, record the demo voice-over, and get KiS IT approval for Teams Level 3.
+- **Keys not added yet:** web search (`TAVILY_API_KEY`) and Microsoft sign-in show labeled demo data until added.
+- **Study rooms use snapshot mode** (a small picture every 10 s, as the build prompt makes the default). Live video
+  would need a self-hosted LiveKit or Jitsi server. Open rooms between schools stay off until after the KiS pilot.
+- **On-device room checks** cover nudity (NSFW.js) and knives; smoking, vaping, gestures and ID cards are caught by the
+  AI spot check and by reports.
+- **Guardian approval** works by a link the student shares; without an email service the app can't confirm who opens
+  it. Under-13 sign-up approval still needs an email service.
+- **Free AI tiers:** Groq allows about 8,000 tokens a minute per model; a whole class at once needs Groq's paid tier.
+- **Search by meaning** (embeddings) is off: Hugging Face was removed; full-text search is used.
+- **Other platforms:** Google Classroom and Canvas connectors, and ManageBac/Toddle beyond calendar feeds, need a
+  school partnership.
+- **Speaker labels** come from Teams transcripts only; Whisper recordings have none.
+- **Two-voice audio summaries** need a paid text-to-speech key; read-aloud uses the browser's voices.
+- **School directory:** only KiS is listed; others use "My school is not listed". The optional mascot isn't drawn.

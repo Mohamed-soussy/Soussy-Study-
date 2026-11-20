@@ -68,9 +68,9 @@ export default function SchoolItPage() {
             ))}
           </tbody>
         </table>
-        <p className="mt-2 text-sm text-muted">
-          Not requested: any write permission, mail, chats, channel messages, other users&apos; data, grades. A later, optional level (only with your approval) would add meeting
-          transcripts and recordings (OnlineMeetings.Read, OnlineMeetingTranscript.Read.All) so class recordings can be summarized for the student.
+        <p className="mt-2 text-sm text-muted print:text-[11px]">
+          Not requested: any write permission, mail, chats, channel messages, other users&apos; data, grades. Level 3, only with your approval, adds class meeting
+          transcripts (OnlineMeetings.Read, OnlineMeetingTranscript.Read.All) so class recordings can be summarized for the student.
         </p>
       </section>
 
@@ -89,7 +89,7 @@ export default function SchoolItPage() {
             <li>The student can disconnect at any time in Settings → Connections. Disconnecting deletes the stored tokens immediately.</li>
             <li>On disconnect the student chooses whether to keep or delete what was imported.</li>
             <li>Deleting the Soussy Study account deletes everything.</li>
-            <li>Sync runs every 30 minutes only while the student has the app open.</li>
+            <li>Sync runs every 30 minutes while the student has the app open. Only after you approve Level 3 does it also sync in the background every 30 minutes and import class meeting transcripts.</li>
           </ul>
         </div>
       </section>
