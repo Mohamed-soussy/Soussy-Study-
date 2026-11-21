@@ -12,6 +12,8 @@ const ALIASES: Record<string, string[]> = {
   MISTRAL_API_KEY: ["mistralapikey", "mistralkey", "mistralaikey"],
 };
 
+const CONTAINS: Record<string, string> = { GEMINI_API_KEY: "gemini", GROQ_API_KEY: "groq", MISTRAL_API_KEY: "mistral", TAVILY_API_KEY: "tavily" };
+
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
 
 /** Copies a hand-named variable onto the exact name when the exact one is missing. */
@@ -19,7 +21,10 @@ export function applyEnvAliases(env: Record<string, string | undefined> = proces
   const byNorm = new Map(Object.keys(env).map((k) => [norm(k), k]));
   for (const [exact, aliases] of Object.entries(ALIASES)) {
     if (env[exact]?.trim()) continue;
-    const found = aliases.map((a) => byNorm.get(a)).find((k) => k && env[k]?.trim());
+    let found = aliases.map((a) => byNorm.get(a)).find((k) => k && env[k]?.trim());
+    // Last resort: any variable whose name contains the service's name (e.g. "Gemini", "my gemini").
+    const word = CONTAINS[exact];
+    if (!found && word) found = [...byNorm.entries()].find(([n, k]) => n.includes(word) && env[k]?.trim())?.[1];
     if (found) env[exact] = env[found]!.trim();
   }
 }

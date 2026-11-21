@@ -12,6 +12,8 @@ export function GET() {
     gemini: has("GEMINI_API_KEY"),
     mistral: has("MISTRAL_API_KEY"),
     tavily: has("TAVILY_API_KEY"),
+    // Names only (never values) of variables that mention Google/Gemini, to spot a misnamed key.
+    geminiLikeNames: Object.keys(process.env).filter((k) => /gem|google|aistudio/i.test(k)),
     commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
   });
 }
