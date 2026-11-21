@@ -12,6 +12,9 @@ export function GET() {
     gemini: has("GEMINI_API_KEY"),
     mistral: has("MISTRAL_API_KEY"),
     tavily: has("TAVILY_API_KEY"),
+    turnstileSiteKey: has("NEXT_PUBLIC_TURNSTILE_SITE_KEY"),
+    // Names only (never values) of variables mentioning Turnstile/captcha, to spot a misnamed key.
+    captchaNames: Object.keys(process.env).filter((k) => /turnstile|captcha|cloudflare|sitekey/i.test(k)),
     commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
   });
 }
