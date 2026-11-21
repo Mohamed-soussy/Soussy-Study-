@@ -2184,7 +2184,8 @@
       "groq": "Groq (الدردشة والحلّال والحصص…)",
       "tavily": "Tavily (البحث عن المصادر)",
       "microsoft": "تسجيل الدخول بـ Microsoft",
-      "level3": "Teams المستوى 3"
+      "level3": "Teams المستوى 3",
+      "mistral": "Mistral (ذكاء احتياطي مجاني)"
     }
   }
 }

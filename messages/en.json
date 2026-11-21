@@ -2184,7 +2184,8 @@
       "groq": "Groq (chat, solver, lessons…)",
       "tavily": "Tavily (resource finder)",
       "microsoft": "Microsoft sign-in",
-      "level3": "Teams Level 3"
+      "level3": "Teams Level 3",
+      "mistral": "Mistral (free backup AI)"
     }
   }
 }

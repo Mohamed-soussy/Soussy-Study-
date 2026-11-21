@@ -15,7 +15,7 @@ import "server-only";
  * Which job goes to which engine is decided in ROUTES below and nowhere else.
  */
 
-export type Engine = "gemini" | "groq" | "huggingface";
+export type Engine = "gemini" | "groq" | "huggingface" | "mistral";
 
 /** The privacy class of what a job sends. */
 export type DataClass = "public" | "personal" | "opt-in-image";
@@ -79,7 +79,9 @@ export class EngineError extends Error {
 
 export function engineConfigured(engine: Engine): boolean {
   if (engine === "gemini") return Boolean(process.env.GEMINI_API_KEY);
-  if (engine === "groq") return Boolean(process.env.GROQ_API_KEY);
+  // Mistral is the free overflow for Groq: either key is enough to run the personal-data features.
+  if (engine === "groq") return Boolean(process.env.GROQ_API_KEY || process.env.MISTRAL_API_KEY);
+  if (engine === "mistral") return Boolean(process.env.MISTRAL_API_KEY);
   return Boolean(process.env.HUGGINGFACE_ACCESS_TOKEN);
 }
 
@@ -116,9 +118,9 @@ async function post(engine: Engine, url: string, headers: Record<string, string>
  * Tries each model in order; moves on when one is busy, rate limited or slow.
  * If every model is rate limited, waits once (up to 30 s, as the provider asks) and tries again.
  */
-async function withFallback<T>(models: readonly string[], run: (model: string) => Promise<T>): Promise<T> {
+async function withFallback<T>(models: readonly string[], run: (model: string) => Promise<T>, rounds = 2): Promise<T> {
   let last: unknown;
-  for (let round = 0; round < 2; round++) {
+  for (let round = 0; round < rounds; round++) {
     let wait = 0;
     for (const m of models) {
       try {
@@ -216,6 +218,39 @@ function groqKey() {
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
+/* ---- Mistral: free overflow when Groq's free limits run out (same OpenAI-style API) ---- */
+
+const MISTRAL_URL = "https://api.mistral.ai/v1/chat/completions";
+const MISTRAL_CHAT = ["mistral-medium-latest", "mistral-small-latest"] as const;
+const MISTRAL_AUDIO = ["voxtral-mini-latest"] as const;
+const OVERFLOW_CODES = ["rate_limited", "busy", "timeout", "no_credits", "not_configured"];
+
+/**
+ * Runs on Groq first; if Groq isn't set up, is rate limited, busy or out of credits,
+ * and a Mistral key exists, runs the same request on Mistral instead.
+ */
+async function groqThenMistral<T>(onGroq: (key: string) => Promise<T>, onMistral: (key: string) => Promise<T>): Promise<T> {
+  const mistral = process.env.MISTRAL_API_KEY;
+  try {
+    return await onGroq(groqKey());
+  } catch (err) {
+    if (!mistral || !(err instanceof EngineError) || !OVERFLOW_CODES.includes(err.code)) throw err;
+    return onMistral(mistral);
+  }
+}
+
+/** Mistral takes the same messages; images go as a plain data-URL string. */
+function mistralMessages(messages: GroqMessage[]) {
+  return messages.map((m) => ({
+    role: m.role,
+    content: typeof m.content === "string" ? m.content : m.content.map((c) => (c.type === "image_url" ? { type: "image_url", image_url: c.image_url.url } : c)),
+  }));
+}
+
+function mistralPost(key: string, body: Record<string, unknown>, timeoutMs = 60000) {
+  return withFallback(MISTRAL_CHAT, (model) => post("mistral", MISTRAL_URL, { Authorization: `Bearer ${key}` }, { model, ...body }, timeoutMs));
+}
+
 /**
  * Groq's free tier reserves max_completion_tokens against an 8,000-tokens-per-minute
  * budget per model, so every call asks only for what it needs, keeps reasoning short
@@ -232,45 +267,82 @@ export async function groqJSON<T>(
   route: { engine: "groq"; models: readonly string[] },
   args: { messages: GroqMessage[]; schema: Record<string, unknown>; name: string; maxTokens?: number; effort?: "low" | "medium" },
 ): Promise<T> {
-  const key = groqKey();
-  return withFallback(route.models, async (model) => {
-    const res = await post(
-      "groq",
-      GROQ_URL,
-      { Authorization: `Bearer ${key}` },
-      {
-        model,
-        messages: args.messages,
-        max_completion_tokens: args.maxTokens ?? 2000,
-        ...groqExtras(model, args.effort),
+  const overflow = Boolean(process.env.MISTRAL_API_KEY);
+  return groqThenMistral(
+    (key) =>
+      withFallback(
+        route.models,
+        async (model) => {
+          const res = await post(
+            "groq",
+            GROQ_URL,
+            { Authorization: `Bearer ${key}` },
+            {
+              model,
+              messages: args.messages,
+              max_completion_tokens: args.maxTokens ?? 2000,
+              ...groqExtras(model, args.effort),
+              response_format: { type: "json_schema", json_schema: { name: args.name, strict: true, schema: args.schema } },
+            },
+            45000,
+          );
+          const data = (await res.json()) as { choices: { message: { content: string } }[] };
+          try {
+            return JSON.parse(data.choices[0].message.content) as T;
+          } catch {
+            throw new EngineError("groq", "busy", "Groq returned unreadable JSON.");
+          }
+        },
+        overflow ? 1 : 2,
+      ),
+    async (key) => {
+      const res = await mistralPost(key, {
+        messages: mistralMessages(args.messages),
+        max_tokens: args.maxTokens ?? 2000,
         response_format: { type: "json_schema", json_schema: { name: args.name, strict: true, schema: args.schema } },
-      },
-      45000,
-    );
-    const data = (await res.json()) as { choices: { message: { content: string } }[] };
-    try {
-      return JSON.parse(data.choices[0].message.content) as T;
-    } catch {
-      throw new EngineError("groq", "failed", "Groq returned unreadable JSON.");
-    }
-  });
+      });
+      const data = (await res.json()) as { choices: { message: { content: string } }[] };
+      try {
+        return JSON.parse(data.choices[0].message.content) as T;
+      } catch {
+        throw new EngineError("mistral", "failed", "Mistral returned unreadable JSON.");
+      }
+    },
+  );
 }
 
 /** Plain text from Groq (used for reading images). */
 export async function groqText(route: { engine: "groq"; models: readonly string[] }, messages: GroqMessage[], maxTokens = 1500): Promise<string> {
-  const key = groqKey();
-  return withFallback(route.models, async (model) => {
-    const res = await post("groq", GROQ_URL, { Authorization: `Bearer ${key}` }, { model, messages, max_completion_tokens: maxTokens, ...groqExtras(model) }, 60000);
-    const data = (await res.json()) as { choices: { message: { content: string } }[] };
-    return (data.choices[0]?.message?.content ?? "").replace(/<think>[\s\S]*?<\/think>/g, "").trim();
-  });
+  const clean = (s: string) => s.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+  return groqThenMistral(
+    (key) =>
+      withFallback(
+        route.models,
+        async (model) => {
+          const res = await post("groq", GROQ_URL, { Authorization: `Bearer ${key}` }, { model, messages, max_completion_tokens: maxTokens, ...groqExtras(model) }, 60000);
+          const data = (await res.json()) as { choices: { message: { content: string } }[] };
+          return clean(data.choices[0]?.message?.content ?? "");
+        },
+        process.env.MISTRAL_API_KEY ? 1 : 2,
+      ),
+    async (key) => {
+      const res = await mistralPost(key, { messages: mistralMessages(messages), max_tokens: maxTokens });
+      const data = (await res.json()) as { choices: { message: { content: string } }[] };
+      return clean(data.choices[0]?.message?.content ?? "");
+    },
+  );
 }
 
 /** Streams text deltas from Groq (server-sent events). */
 export async function* groqStream(route: { engine: "groq"; models: readonly string[] }, messages: GroqMessage[], maxTokens = 1500): AsyncGenerator<string> {
-  const key = groqKey();
-  const res = await withFallback(route.models, (model) =>
-    post("groq", GROQ_URL, { Authorization: `Bearer ${key}` }, { model, messages, stream: true, max_completion_tokens: maxTokens, ...groqExtras(model) }, 60000),
+  const res = await groqThenMistral(
+    (key) =>
+      withFallback(
+        route.models,
+        (model) => post("groq", GROQ_URL, { Authorization: `Bearer ${key}` }, { model, messages, stream: true, max_completion_tokens: maxTokens, ...groqExtras(model) }, 60000),
+        process.env.MISTRAL_API_KEY ? 1 : 2,
+      ),
+    (key) => mistralPost(key, { messages: mistralMessages(messages), stream: true, max_tokens: maxTokens }),
   );
   const reader = res.body!.getReader();
   const dec = new TextDecoder();
@@ -308,29 +380,47 @@ export interface Segment {
  * `prompt` is a short hint of names and subject words; it improves spelling, nothing else.
  */
 export async function groqTranscribe(audio: Blob, opts: { prompt?: string; language?: string } = {}): Promise<{ segments: Segment[]; language: string }> {
-  const key = groqKey();
-  return withFallback(ROUTES.transcribe.models, async (model) => {
+  return groqThenMistral(
+    (key) => transcribeWith("groq", "https://api.groq.com/openai/v1/audio/transcriptions", key, ROUTES.transcribe.models, audio, opts, process.env.MISTRAL_API_KEY ? 1 : 2),
+    (key) => transcribeWith("mistral", "https://api.mistral.ai/v1/audio/transcriptions", key, MISTRAL_AUDIO, audio, opts, 2),
+  );
+}
+
+async function transcribeWith(
+  engine: Engine,
+  url: string,
+  key: string,
+  models: readonly string[],
+  audio: Blob,
+  opts: { prompt?: string; language?: string },
+  rounds: number,
+): Promise<{ segments: Segment[]; language: string }> {
+  return withFallback(models, async (model) => {
     const form = new FormData();
     form.append("file", audio, "chunk.wav");
     form.append("model", model);
-    form.append("response_format", "verbose_json");
-    form.append("timestamp_granularities[]", "segment");
-    form.append("temperature", "0");
-    if (opts.prompt) form.append("prompt", opts.prompt.slice(0, 600));
+    if (engine === "groq") {
+      form.append("response_format", "verbose_json");
+      form.append("timestamp_granularities[]", "segment");
+      form.append("temperature", "0");
+      if (opts.prompt) form.append("prompt", opts.prompt.slice(0, 600));
+    } else {
+      form.append("timestamp_granularities", "segment");
+    }
     if (opts.language) form.append("language", opts.language);
     let res: Response;
     try {
-      res = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+      res = await fetch(url, {
         method: "POST",
         headers: { Authorization: `Bearer ${key}` },
         body: form,
         signal: AbortSignal.timeout(55000),
       });
     } catch (err) {
-      if (err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError")) throw new EngineError("groq", "timeout", "Transcribing took too long.");
-      throw new EngineError("groq", "failed", "Couldn't reach the speech model.");
+      if (err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError")) throw new EngineError(engine, "timeout", "Transcribing took too long.");
+      throw new EngineError(engine, "failed", "Couldn't reach the speech model.");
     }
-    if (!res.ok) throw classify("groq", res.status, await res.text().catch(() => ""), Number(res.headers.get("retry-after")) || 0);
+    if (!res.ok) throw classify(engine, res.status, await res.text().catch(() => ""), Number(res.headers.get("retry-after")) || 0);
     const data = (await res.json()) as {
       language?: string;
       segments?: { start: number; end: number; text: string; no_speech_prob?: number; avg_logprob?: number; compression_ratio?: number }[];
@@ -341,7 +431,7 @@ export async function groqTranscribe(audio: Blob, opts: { prompt?: string; langu
       .map((g) => ({ s: Math.round(g.start * 10) / 10, e: Math.round(g.end * 10) / 10, text: g.text.trim() }))
       .filter((g) => g.text && !/^(thank you\.?|thanks for watching!?|you|\.+)$/i.test(g.text));
     return { segments, language: data.language ?? "" };
-  });
+  }, rounds);
 }
 
 /* ---------------- Hugging Face ---------------- */

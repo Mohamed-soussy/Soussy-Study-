@@ -7,7 +7,7 @@ import { engineConfigured, type Engine } from "./engines";
 export const DAILY_AI_LIMIT = 60;
 
 export function aiNotConnected(engine: Engine) {
-  const name = { gemini: "GEMINI_API_KEY", groq: "GROQ_API_KEY", huggingface: "HUGGINGFACE_ACCESS_TOKEN" }[engine];
+  const name = { gemini: "GEMINI_API_KEY", groq: "GROQ_API_KEY", huggingface: "HUGGINGFACE_ACCESS_TOKEN", mistral: "MISTRAL_API_KEY" }[engine];
   return NextResponse.json({ error: "ai_not_connected", message: `The AI isn't connected yet. Add ${name} to the server settings.` }, { status: 503 });
 }
 

@@ -9,6 +9,7 @@ const ALIASES: Record<string, string[]> = {
   GROQ_API_KEY: ["groqapikey", "grokapikey", "groqkey", "grokkey"],
   GEMINI_API_KEY: ["geminiapikey", "geminikey", "googleapikey", "googleaistudiokey", "geminiaikey"],
   TAVILY_API_KEY: ["tavilyapikey", "tavilykey"],
+  MISTRAL_API_KEY: ["mistralapikey", "mistralkey", "mistralaikey"],
 };
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");

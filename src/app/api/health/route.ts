@@ -100,6 +100,17 @@ export async function GET() {
     }
   }
 
+  // 5b. Mistral (optional free overflow when Groq's free limits run out)
+  if (!env("MISTRAL_API_KEY")) add("mistral", null, "Optional: not set. Add it so the AI keeps working when Groq's free daily limit runs out.", "console.mistral.ai → API Keys (free plan) → Vercel MISTRAL_API_KEY → redeploy.");
+  else {
+    try {
+      const r = await timed(fetch("https://api.mistral.ai/v1/models", { headers: { Authorization: `Bearer ${process.env.MISTRAL_API_KEY}` } }));
+      add("mistral", r.ok, r.ok ? "Works: takes over when Groq is busy or out of free requests." : `Mistral said: HTTP ${r.status}`, r.ok ? undefined : "Make a new key at console.mistral.ai, add it in Vercel, redeploy.");
+    } catch (e) {
+      add("mistral", false, e instanceof Error ? e.message : "No answer.");
+    }
+  }
+
   // 6. Tavily (resource finder)
   if (!env("TAVILY_API_KEY")) add("tavily", false, "Not set: the resource finder shows demo cards.", "tavily.com → API key → Vercel TAVILY_API_KEY → redeploy.");
   else {
@@ -116,7 +127,7 @@ export async function GET() {
   add("level3", env("MS_LEVEL3") && env("CRON_SECRET") ? true : null, env("MS_LEVEL3") ? "Teams Level 3 is on." : "Optional: off until KiS IT approves.", "After IT approval: MS_LEVEL3=1, CRON_SECRET, and the cron block at the end of migration 0006.");
   // Which deployment is this, and which key NAMES can it see (never values)? Catches typos,
   // keys saved in another Vercel project, and keys added without a redeploy.
-  const wanted = ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "GROQ_API_KEY", "GEMINI_API_KEY", "TAVILY_API_KEY"];
+  const wanted = ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "GROQ_API_KEY", "GEMINI_API_KEY", "TAVILY_API_KEY", "MISTRAL_API_KEY"];
   const looksLikeKey = /supabase|groq|gemini|tavily|google|api_?key|_key$|secret/i;
   const seen = Object.keys(process.env).filter((k) => looksLikeKey.test(k) && !k.startsWith("npm_"));
   const deployment = {
