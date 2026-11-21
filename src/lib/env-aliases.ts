@@ -22,7 +22,8 @@ export function applyEnvAliases(env: Record<string, string | undefined> = proces
   const byNorm = new Map(Object.keys(env).map((k) => [norm(k), k]));
   for (const [exact, aliases] of Object.entries(ALIASES)) {
     if (env[exact]?.trim()) continue;
-    let found = aliases.map((a) => byNorm.get(a)).find((k) => k && env[k]?.trim());
+    // The exact name typed without "_" or in another case (e.g. NEXTPUBLICTURNSTILESITEKEY) also counts.
+    let found = [norm(exact), ...aliases].map((a) => byNorm.get(a)).find((k) => k && env[k]?.trim());
     // Last resort: any variable whose name contains the service's name (e.g. "Gemini", "my gemini").
     const word = CONTAINS[exact];
     if (!found && word) found = [...byNorm.entries()].find(([n, k]) => n.includes(word) && env[k]?.trim())?.[1];
