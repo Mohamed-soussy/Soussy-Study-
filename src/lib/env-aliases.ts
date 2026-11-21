@@ -7,7 +7,7 @@ const ALIASES: Record<string, string[]> = {
   NEXT_PUBLIC_SUPABASE_ANON_KEY: ["supabaseanonkey", "supabaseanon", "supabasepublickey", "supabasepublishablekey", "nextpublicsupabaseanonkey"],
   SUPABASE_SERVICE_ROLE_KEY: ["supabaseservicerolekey", "supabaseseriverolekey", "supabaseservicekey", "servicerolekey", "supabaseservicerole"],
   GROQ_API_KEY: ["groqapikey", "grokapikey", "groqkey", "grokkey"],
-  GEMINI_API_KEY: ["geminiapikey", "geminikey", "googleapikey", "googleaistudiokey", "geminiaikey"],
+  GEMINI_API_KEY: ["gemimikey", "gemmikey", "gemniapikey", "geminiapikey", "geminikey", "googleapikey", "googleaistudiokey", "geminiaikey"],
   TAVILY_API_KEY: ["tavilyapikey", "tavilykey"],
   MISTRAL_API_KEY: ["mistralapikey", "mistralkey", "mistralaikey"],
 };
