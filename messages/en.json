@@ -46,7 +46,8 @@
     "error": "That didn't work: {message}",
     "demoTitle": "Accounts aren't connected yet",
     "demoBody": "Real sign-in needs the Supabase anon key in the app's settings. Until then you can try everything in demo mode. It saves only in this browser.",
-    "demoButton": "Try demo mode"
+    "demoButton": "Try demo mode",
+    "captchaWait": "Wait a second while we check you're not a robot."
   },
   "legal": {
     "title": "Terms, privacy and community rules",

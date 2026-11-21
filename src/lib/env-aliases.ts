@@ -9,6 +9,7 @@ const ALIASES: Record<string, string[]> = {
   GROQ_API_KEY: ["groqapikey", "grokapikey", "groqkey", "grokkey"],
   GEMINI_API_KEY: ["gemimikey", "gemmikey", "gemniapikey", "geminiapikey", "geminikey", "googleapikey", "googleaistudiokey", "geminiaikey"],
   TAVILY_API_KEY: ["tavilyapikey", "tavilykey"],
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: ["turnstilesitekey", "turnstilekey", "cloudflaresitekey", "captchasitekey", "sitekey", "turnstile"],
   MISTRAL_API_KEY: ["mistralapikey", "mistralkey", "mistralaikey"],
 };
 

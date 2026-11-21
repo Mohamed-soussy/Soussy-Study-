@@ -1,9 +1,10 @@
 "use client";
 
 import { FlaskConical } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Turnstile, TURNSTILE_SITE_KEY, type TurnstileHandle } from "@/components/auth/turnstile";
 import { Button } from "@/components/ui/button";
 import { Card, Field, Input } from "@/components/ui/primitives";
 import { startDemoSession } from "@/lib/profile/store";
@@ -43,6 +44,11 @@ export function SignInForm({ configured }: { configured: boolean }) {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const locale = useLocale();
+  // Robot check (only when a Turnstile site key is set; Supabase checks the token).
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const turnstile = useRef<TurnstileHandle>(null);
+  const needCaptcha = Boolean(TURNSTILE_SITE_KEY) && !captcha;
   // Only show sign-in buttons for providers switched on in Supabase (no error for students).
   const [providers, setProviders] = useState<{ google: boolean; azure: boolean }>({ google: true, azure: false });
   useEffect(() => {
@@ -97,12 +103,18 @@ export function SignInForm({ configured }: { configured: boolean }) {
   async function withEmail(mode: "in" | "up") {
     setError(null);
     setNotice(null);
+    if (needCaptcha) {
+      setError(t("captchaWait"));
+      return;
+    }
     setBusy(true);
+    const captchaToken = captcha ?? undefined;
     const result =
       mode === "in"
-        ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } });
+        ? await supabase.auth.signInWithPassword({ email, password, options: { captchaToken } })
+        : await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo, captchaToken } });
     setBusy(false);
+    turnstile.current?.reset(); // each token works once
     if (result.error) {
       setError(t("error", { message: result.error.message }));
       return;
@@ -162,6 +174,7 @@ export function SignInForm({ configured }: { configured: boolean }) {
             onChange={(e) => setPassword(e.target.value)}
           />
         </Field>
+        <Turnstile ref={turnstile} onToken={setCaptcha} language={locale} />
         {error && (
           <p className="text-sm text-danger" role="alert">
             {error}
@@ -173,13 +186,13 @@ export function SignInForm({ configured }: { configured: boolean }) {
           </p>
         )}
         <div className="grid grid-cols-2 gap-2">
-          <Button type="submit" disabled={busy}>
+          <Button type="submit" disabled={busy || needCaptcha}>
             {t("signInButton")}
           </Button>
           <Button
             type="button"
             variant="secondary"
-            disabled={busy || password.length < 8 || !email}
+            disabled={busy || needCaptcha || password.length < 8 || !email}
             onClick={() => withEmail("up")}
           >
             {t("signUpButton")}

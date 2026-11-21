@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
         return v;
       }
     })(),
+    NEXT_PUBLIC_TURNSTILE_SITE_KEY: (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "").trim(),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "").trim(),
   },
 };
