@@ -3,11 +3,12 @@
 import { FlaskConical } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, Field, Input } from "@/components/ui/primitives";
 import { startDemoSession } from "@/lib/profile/store";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase/config";
 
 function GoogleIcon() {
   return (
@@ -42,6 +43,15 @@ export function SignInForm({ configured }: { configured: boolean }) {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Only show sign-in buttons for providers switched on in Supabase (no error for students).
+  const [providers, setProviders] = useState<{ google: boolean; azure: boolean }>({ google: true, azure: false });
+  useEffect(() => {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return;
+    fetch(`${SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: SUPABASE_ANON_KEY } })
+      .then((r) => r.json())
+      .then((d: { external?: Record<string, boolean> }) => setProviders({ google: !!d.external?.google, azure: !!d.external?.azure }))
+      .catch(() => {});
+  }, []);
   const [notice, setNotice] = useState<string | null>(null);
 
   if (!configured) {
@@ -108,15 +118,21 @@ export function SignInForm({ configured }: { configured: boolean }) {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
-        <Button variant="outline" size="lg" disabled={busy} onClick={() => oauth("google")}>
-          <GoogleIcon />
-          {t("google")}
-        </Button>
-        <Button variant="outline" size="lg" disabled={busy} onClick={() => oauth("azure")}>
-          <MicrosoftIcon />
-          {t("microsoft")}
-        </Button>
-        <p className="text-center text-xs text-muted">{t("microsoftHint")}</p>
+        {providers.google && (
+          <Button variant="outline" size="lg" disabled={busy} onClick={() => oauth("google")}>
+            <GoogleIcon />
+            {t("google")}
+          </Button>
+        )}
+        {providers.azure && (
+          <>
+            <Button variant="outline" size="lg" disabled={busy} onClick={() => oauth("azure")}>
+              <MicrosoftIcon />
+              {t("microsoft")}
+            </Button>
+            <p className="text-center text-xs text-muted">{t("microsoftHint")}</p>
+          </>
+        )}
       </div>
 
       <div className="flex items-center gap-3 text-xs text-muted">
