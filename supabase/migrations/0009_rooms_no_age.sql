@@ -23,3 +23,21 @@ language sql stable security definer set search_path = public as $$
     and (split_part(topic, ':', 3) in ('open', 'friends', 'code')
          or split_part(topic, ':', 3) = md5(coalesce((select school from profiles where id = auth.uid()), '')))
 $$;
+
+-- Notes: notebooks with tabs (like Google Docs tabs), saved to the student's account so they
+-- open on every device and the Study Hub AI can read them when asked.
+create table if not exists public.notebooks (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  title text not null default 'Untitled',
+  subject_code text,
+  tabs jsonb not null default '[]'::jsonb,
+  updated_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+alter table public.notebooks enable row level security;
+drop policy if exists "own notebooks" on public.notebooks;
+create policy "own notebooks" on public.notebooks for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+grant select, insert, update, delete on public.notebooks to authenticated;
+create index if not exists notebooks_user on public.notebooks (user_id, updated_at desc);

@@ -5,8 +5,10 @@ import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCurrentProfile } from "@/components/shell/profile-context";
+import { UploadFromDevice } from "@/components/hub/upload-from-device";
 import { Button } from "@/components/ui/button";
-import { Card, Field, Select } from "@/components/ui/primitives";
+import { getRepo } from "@/lib/data/repo";
+import { Card, Chip, Field, Select } from "@/components/ui/primitives";
 import { curriculumName, getPack } from "@/curriculum";
 import { unitsFor } from "@/curriculum/units";
 import { getRepo3 } from "@/lib/data/repo3";
@@ -52,6 +54,7 @@ export function MockExam() {
   const [types, setTypes] = useState<string[]>(() => (/mcq|multiple|paper 1 \(multiple/i.test(styles[0]) ? ["mcq"] : ["short", "long"]));
   const [topic, setTopic] = useState(params.get("topic") ?? "");
   const [sources, setSources] = useState<{ title: string; url: string }[]>([]);
+  const [material, setMaterial] = useState<{ name: string; text: string } | null>(null);
   const auto = (type: string) => type === "mcq" || type === "truefalse";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -84,7 +87,7 @@ export function MockExam() {
       const res = await fetch("/api/coach/exam", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ course: `${enrollment.name} ${enrollment.level !== "None" ? enrollment.level : ""}`.trim(), curriculum: curriculumName(pack?.id) ?? "", units: list, topic, style, minutes, calculator, difficulty, types }),
+        body: JSON.stringify({ course: `${enrollment.name} ${enrollment.level !== "None" ? enrollment.level : ""}`.trim(), curriculum: curriculumName(pack?.id) ?? "", units: list, topic, style, minutes, calculator, difficulty, types, material: material?.text }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message ?? t("failed"));
@@ -334,6 +337,22 @@ export function MockExam() {
           className="w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary"
         />
       </Field>
+      <div className="flex flex-wrap items-center gap-2">
+        <UploadFromDevice
+          label={t("uploadText")}
+          onReady={async (f) => {
+            const pages = await getRepo().chunks.pages(f.id).catch(() => []);
+            setMaterial({ name: f.name, text: pages.map((p) => p.content).join("\n\n") });
+          }}
+        />
+        {material && (
+          <Chip>
+            {material.name}
+            <button type="button" onClick={() => setMaterial(null)} aria-label={t("removeText")} className="ms-1">×</button>
+          </Chip>
+        )}
+        <span className="text-xs text-muted">{t("uploadTextHint")}</span>
+      </div>
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-sm font-medium">{t("units")}</legend>
         <div className="flex flex-wrap gap-2">

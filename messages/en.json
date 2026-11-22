@@ -1187,7 +1187,34 @@
     "clear": "Clear drawing",
     "pen": "Pen",
     "eraser": "Eraser",
-    "placeholder": "Write anything…"
+    "placeholder": "Write anything…",
+    "textTabs": "Notebooks with tabs, math formulas, a calculator and Desmos. Saved to your account, and the Study Hub AI can read them.",
+    "newBook": "New notebook",
+    "untitled": "Untitled notebook",
+    "tabN": "Tab {n}",
+    "deleteTabConfirm": "Delete this tab?",
+    "deleteBookConfirm": "Delete the notebook “{name}” and all its tabs?",
+    "bookName": "Notebook name",
+    "rename": "Rename",
+    "deleteBook": "Delete notebook",
+    "saved": "Saved",
+    "saving": "Saving…",
+    "tabs": "Tabs",
+    "tabName": "Tab name",
+    "deleteTab": "Delete tab",
+    "addTab": "Tab",
+    "mode": {
+      "write": "Write",
+      "preview": "Preview",
+      "draw": "Draw"
+    },
+    "math": "Insert math",
+    "mathBlock": "Formula block",
+    "calculator": "Calculator",
+    "askAi": "Ask AI about this tab",
+    "placeholderMath": "Type your notes. Math: $x^2 + 3x$ or a block between $$ lines. Double-click a tab to rename it.",
+    "empty": "Nothing here yet.",
+    "mathHint": "Tip: in the Study Hub, ask “in my Math notes, tab 8.1, I don't understand line 4” and the AI reads that tab."
   },
   "lessons": {
     "title": "Lessons",
@@ -1785,7 +1812,10 @@
       },
       "topic": "What exactly should it test?",
       "topicPlaceholder": "e.g. The Bear by Andrew Krivak, pages 97–108: descriptive language, characterization, structure",
-      "basedOn": "Exam format checked against {count} real sources"
+      "basedOn": "Exam format checked against {count} real sources",
+      "uploadText": "Upload the text or your notes",
+      "removeText": "Remove",
+      "uploadTextHint": "Optional: the extract, chapter or notes the questions should use (PDF, Word, photo)."
     },
     "teach": {
       "intro": "Explain a topic to Sam, a classmate who missed the lesson. Sam asks questions until the gaps show. Type \"done\" (or tap Finish) for a short report.",

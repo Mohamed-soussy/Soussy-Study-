@@ -29,7 +29,9 @@ export async function POST(req: NextRequest) {
     calculator?: boolean;
     difficulty?: string;
     types?: string[];
+    material?: string;
   };
+  const material = (b.material ?? "").slice(0, 12000);
   const units = (b.units ?? []).map((u) => u.slice(0, 120)).filter(Boolean).slice(0, 6);
   const topic = (b.topic ?? "").trim().slice(0, 600);
   if (!b.course || !(units.length || topic)) return NextResponse.json({ error: "bad_request" }, { status: 400 });
@@ -55,7 +57,7 @@ export async function POST(req: NextRequest) {
       schema: EXAM_SCHEMA,
       maxTokens: 7000,
       effort: "medium",
-      messages: [{ role: "user", content: examPrompt({ course, curriculum, units, topic, style, minutes, calculator: b.calculator !== false, difficulty, types, research }) }],
+      messages: [{ role: "user", content: examPrompt({ course, curriculum, units, topic, style, minutes, calculator: b.calculator !== false, difficulty, types, research, material }) }],
     });
     exam.questions = exam.questions
       .filter((q) => q.prompt && q.marks > 0)

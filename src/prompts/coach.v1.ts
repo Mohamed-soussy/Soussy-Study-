@@ -77,6 +77,7 @@ export function examPrompt(a: {
   difficulty?: "easy" | "medium" | "hard";
   types?: QuestionType[];
   research?: string;
+  material?: string;
 }) {
   const types = a.types?.length ? a.types : /paper 1|mcq|multiple/i.test(a.style) ? (["mcq"] as QuestionType[]) : (["short", "long"] as QuestionType[]);
   const diff = a.difficulty ?? "medium";
@@ -89,6 +90,7 @@ ${types.map((t) => `- ${TYPE_RULES[t]}`).join("\n")}
 - Total marks should fit ${a.minutes} minutes the way the real exam does (about 1 mark per minute for science/maths papers; essays follow the official time).
 - Match the REAL exam for this curriculum and subject: its paper structure, command terms, mark allocation and markscheme style. Use the research notes below for that format; never copy their questions.
 - Every question names its unit or topic in "unit".
+${a.material ? `\nThe student's own text / notes for this exam. Base the questions on it, quote it exactly, and refer to its real lines or paragraphs only:\n<material>\n${a.material}\n</material>\n` : "- No text was given: never refer to paragraph or line numbers of a passage the student can't see; quote any extract you use in full inside the question."}
 ${a.research ? `\nResearch notes on the real exam format (from the web):\n${a.research}\n` : ""}
 - "markscheme": for mcq, one line on why the answer is right; otherwise the mark points in the official markscheme style ("M1 …", "A1 …", "1 mark for …"), one per line.
 - Never copy real past-paper questions; write new ones of the same difficulty.

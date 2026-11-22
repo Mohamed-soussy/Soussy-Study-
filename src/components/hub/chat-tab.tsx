@@ -36,6 +36,7 @@ import type { Chat, ChatMessage, Citation, VaultFile } from "@/lib/data/types";
 import { CARD_GROUPS, INTENT_CARDS, type FieldKey, type IntentCard } from "@/lib/hub/intent-cards";
 import { cn } from "@/lib/utils";
 import { utterance } from "@/lib/voice";
+import { listNotebooks, matchNotes, numbered, type Notebook } from "@/lib/notes/store";
 import { Markdown } from "./markdown";
 
 interface Source {
@@ -91,6 +92,9 @@ export function ChatTab() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [streaming, setStreaming] = useState<string | null>(null);
   const [input, setInput] = useState("");
+  // The student's notebooks, so the AI can read the ones they ask about.
+  const notebooks = useRef<Notebook[] | null>(null);
+  const pinnedNote = useRef<{ book: string; tab: string } | null>(null);
   const [justShowMe, setJustShowMe] = useState(false);
   const [files, setFiles] = useState<VaultFile[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -155,6 +159,18 @@ export function ChatTab() {
       const n = out.length + 1;
       out.push({ n, label, text: text.slice(0, 3500), citation: { ...citation, n } });
     };
+    // Their own notes: the tab they pinned ("Ask AI about this tab") or the ones their question names.
+    notebooks.current ??= await listNotebooks().catch(() => []);
+    const books = notebooks.current ?? [];
+    const pinned = pinnedNote.current;
+    const fromNotes = [
+      ...(pinned ? books.flatMap((b) => (b.id === pinned.book ? b.tabs.filter((x) => x.id === pinned.tab).map((tab) => ({ book: b, tab })) : [])) : []),
+      ...matchNotes(q, books),
+    ].filter((x, i, a) => a.findIndex((y) => y.tab.id === x.tab.id) === i).slice(0, 2);
+    for (const { book, tab } of fromNotes) {
+      const label = `${locale === "ar" ? "ملاحظاتي" : "My notes"}: ${book.title} › ${tab.title}`;
+      push(`${label} (lines numbered L1, L2…)`, numbered(tab.content), { file_id: null, file_name: label, page: null });
+    }
     // A specific page ("Ask AI about this page").
     if (page && chat.source_file_ids[0]) {
       const fid = chat.source_file_ids[0];
@@ -260,6 +276,22 @@ export function ChatTab() {
     setStreaming(null);
     setChats((l) => [{ ...chat, updated_at: new Date().toISOString() }, ...l.filter((c) => c.id !== chat.id)]);
   }
+
+  // "Ask AI about this tab" from Notes: pin that tab and start the question for them.
+  useEffect(() => {
+    const book = params.get("notes");
+    const tab = params.get("tab");
+    if (!book || !tab || pinnedNote.current) return;
+    pinnedNote.current = { book, tab };
+    listNotebooks()
+      .then((list) => {
+        notebooks.current = list;
+        const b = list.find((x) => x.id === book);
+        const tb = b?.tabs.find((x) => x.id === tab);
+        if (b && tb) setInput(locale === "ar" ? `في دفتري «${b.title} › ${tb.title}»: ` : `In my notes "${b.title} › ${tb.title}": `);
+      })
+      .catch(() => {});
+  }, [params]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // "Ask AI about this page" from the file viewer.
   useEffect(() => {
