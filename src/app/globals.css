@@ -228,3 +228,26 @@ h3 {
   overflow-y: hidden;
   padding: 0.2em 0;
 }
+
+/* Loading screen: logo pop + "Soussy Study" spelled letter by letter */
+@keyframes soussy-letter {
+  0%, 8% { opacity: 0; transform: translateY(8px); }
+  18%, 80% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateY(-4px); }
+}
+@keyframes soussy-pop {
+  0% { transform: scale(0.85); }
+  50% { transform: scale(1.06); }
+  100% { transform: scale(0.85); }
+}
+@keyframes soussy-bar {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+.soussy-letter { display: inline-block; opacity: 0; animation: soussy-letter 2.6s ease-in-out infinite; }
+.soussy-logo-pop { animation: soussy-pop 1.6s ease-in-out infinite; }
+.soussy-bar { animation: soussy-bar 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .soussy-letter { opacity: 1; animation: none; }
+  .soussy-logo-pop, .soussy-bar { animation: none; }
+}

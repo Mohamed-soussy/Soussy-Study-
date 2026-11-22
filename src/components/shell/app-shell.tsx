@@ -11,6 +11,7 @@ import { useProfile } from "@/lib/profile/use-profile";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { cn } from "@/lib/utils";
 import { TimerBubble } from "@/components/session/bubble";
+import { BrandLoader } from "@/components/brand/brand-loader";
 import { FocusGuard } from "@/components/focus/focus-guard";
 import { DeviceSync, sendToOtherDevice } from "@/components/devices/device-sync";
 import { readAloud } from "@/lib/a11y/settings";
@@ -61,10 +62,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (status !== "ready" || !profile?.onboardedAt || blocked) {
     return (
-      <div className="flex min-h-dvh items-center justify-center gap-3 text-muted">
-        <Logo size={28} className="animate-pulse" />
-        {status === "error" ? c("saveFailed") : c("loading")}
-      </div>
+      <BrandLoader note={status === "error" ? c("saveFailed") : undefined} />
     );
   }
 

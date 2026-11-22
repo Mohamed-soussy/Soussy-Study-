@@ -23,9 +23,16 @@ const arabic = IBM_Plex_Sans_Arabic({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Soussy Study", template: "%s · Soussy Study" },
-  description: "Study your way, with an AI that knows your curriculum.",
+  metadataBase: new URL(`https://${process.env.NEXT_PUBLIC_SITE_HOST || "soussy-study.vercel.app"}`),
+  title: { default: "Soussy Study: AI study app for IB, AP and every curriculum", template: "%s · Soussy Study" },
+  description:
+    "Soussy Study is a free AI study app for high school students: an AI whiteboard teacher, step-by-step solver, flashcards, practice exams, focus room and study rooms for IB, AP, IGCSE and more. In English and Arabic.",
+  keywords: ["Soussy Study", "Soussy", "AI study app", "IB study", "AP study", "AI whiteboard", "homework solver", "flashcards", "study planner", "مذاكرة", "دراسة"],
   applicationName: "Soussy Study",
+  alternates: { canonical: "/" },
+  openGraph: { type: "website", siteName: "Soussy Study", title: "Soussy Study", description: "Study your way, with an AI that knows your curriculum.", url: "/" },
+  // Google Search Console verification (set NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION in Vercel).
+  verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } : undefined,
   appleWebApp: { capable: true, title: "Soussy Study", statusBarStyle: "default" },
 };
 
