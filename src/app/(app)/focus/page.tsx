@@ -78,6 +78,7 @@ export default function FocusPage() {
   const [fullscreen, setFullscreen] = useState(false);
   const [leaves, setLeaves] = useState(0);
   const [awayNotice, setAwayNotice] = useState<string | null>(null);
+  const [lockNotice, setLockNotice] = useState(false);
   const leftAt = useRef<number | null>(null);
 
   // Camera
@@ -145,6 +146,38 @@ export default function FocusPage() {
       document.removeEventListener("visibilitychange", onHide);
     };
   }, []);
+
+  // A check-in answer shows for a few seconds, then gets out of the way.
+  useEffect(() => {
+    if (!checkIn?.reply) return;
+    const id = setTimeout(() => setCheckIn(null), 4000);
+    return () => clearTimeout(id);
+  }, [checkIn]);
+
+  // Locked until the timer ends: links to other pages and the Back button are held.
+  useEffect(() => {
+    if (mode !== "focus" && mode !== "paused" && mode !== "break") return;
+    const onClick = (e: MouseEvent) => {
+      const a = (e.target as HTMLElement | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!a || a.target === "_blank") return;
+      const url = new URL(a.href, location.href);
+      if (url.origin !== location.origin || url.pathname === "/focus") return;
+      e.preventDefault();
+      e.stopPropagation();
+      setLockNotice(true);
+    };
+    const onPop = () => {
+      history.pushState(null, "", location.href);
+      setLockNotice(true);
+    };
+    history.pushState(null, "", location.href);
+    document.addEventListener("click", onClick, true);
+    window.addEventListener("popstate", onPop);
+    return () => {
+      document.removeEventListener("click", onClick, true);
+      window.removeEventListener("popstate", onPop);
+    };
+  }, [mode]);
 
   // Ask before closing the tab mid-session.
   useEffect(() => {
@@ -397,44 +430,75 @@ export default function FocusPage() {
 
           {/* Notices and check-ins (section 12A.3) */}
           {awayNotice && (
-            <Card className="flex flex-wrap items-center gap-3 border-warning/60 p-4" role="status">
-              <p className="min-w-0 flex-1">{t("left", { time: awayNotice })}</p>
-              <Button
-                onClick={() => {
-                  setAwayNotice(null);
-                  setMode("focus");
-                  enterFull();
-                }}
-              >
-                {t("backIn")}
-              </Button>
-            </Card>
+            <div className="fixed inset-0 z-[70] grid place-items-center bg-black/75 p-4">
+              <Card className="flex w-full max-w-xl flex-col gap-4 border-warning/60 p-6 text-lg shadow-2xl sm:p-8" role="alertdialog" aria-modal>
+                <p className="text-5xl" aria-hidden>🚪</p>
+                <p className="text-2xl font-bold">{t("leftTitle")}</p>
+                <p>{t("left", { time: awayNotice })}</p>
+                <p className="text-sm text-muted">{t("leftCount", { count: leaves })}</p>
+                <Button
+                  size="lg"
+                  onClick={() => {
+                    setAwayNotice(null);
+                    setMode("focus");
+                    enterFull();
+                  }}
+                >
+                  {t("backIn")}
+                </Button>
+              </Card>
+            </div>
+          )}
+          {lockNotice && (
+            <div className="fixed inset-0 z-[70] grid place-items-center bg-black/75 p-4">
+              <Card className="flex w-full max-w-xl flex-col gap-4 p-6 text-lg shadow-2xl sm:p-8" role="alertdialog" aria-modal>
+                <p className="text-5xl" aria-hidden>🔒</p>
+                <p className="text-2xl font-bold">{t("lockedTitle")}</p>
+                <p>{t("lockedText", { time: fmt(Math.max(0, left)) })}</p>
+                <Button size="lg" onClick={() => setLockNotice(false)}>
+                  {t("lockedBack")}
+                </Button>
+                <button
+                  type="button"
+                  className="self-center text-sm text-muted underline"
+                  onClick={() => {
+                    setLockNotice(false);
+                    setMode("paused");
+                  }}
+                >
+                  {t("lockedEmergency")}
+                </button>
+              </Card>
+            </div>
           )}
           {checkIn && (
-            <Card className="flex flex-col gap-3 border-primary/40 p-4" role="status" data-testid="checkin">
+            <div className={cn(!checkIn.reply && "fixed inset-0 z-[70] grid place-items-center bg-black/75 p-4")}>
+            <Card className={cn("flex flex-col gap-3 border-primary/40 p-4", !checkIn.reply && "w-full max-w-xl gap-5 p-6 text-lg shadow-2xl sm:p-8")} role={checkIn.reply ? "status" : "alertdialog"} aria-modal={!checkIn.reply} data-testid="checkin">
               {checkIn.reply ? (
                 <p>{checkIn.reply}</p>
               ) : checkIn.kind === "phone" ? (
                 <>
-                  <p className="font-semibold">❓ {ci("phoneTitle")}</p>
+                  <p className="text-5xl" aria-hidden>📱</p>
+                  <p className="text-2xl font-bold">{ci("phoneTitle")}</p>
                   <p>{ci("phoneText")}</p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button size="sm" onClick={() => setCheckIn({ kind: "phone", reply: ci("studyReply") })}>
-                      {ci("study")}
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Button size="lg" onClick={() => setCheckIn({ kind: "phone", reply: ci("studyReply") })}>
+                      📚 {ci("study")}
                     </Button>
                     <Button
-                      size="sm"
+                      size="lg"
                       variant="secondary"
                       onClick={() => {
                         setMode("break");
                         setCheckIn({ kind: "phone", reply: ci("breakReply") });
                       }}
                     >
-                      {ci("break")}
+                      ☕ {ci("break")}
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
+                      className="sm:col-span-2"
                       onClick={() => {
                         setMode("paused");
                         setCheckIn({ kind: "phone", reply: ci("emergencyReply") });
@@ -488,6 +552,7 @@ export default function FocusPage() {
                 </button>
               )}
             </Card>
+            </div>
           )}
           {wrongNote && <p className="text-sm text-muted">{cam("wrongDone")}</p>}
         </section>

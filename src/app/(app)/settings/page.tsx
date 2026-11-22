@@ -159,6 +159,13 @@ export default function SettingsPage() {
           <Suspense>
             <ConnectionsPanel />
           </Suspense>
+          <Card className="flex flex-col gap-2 p-4">
+            <h2 className="font-semibold">{t("multiDeviceTitle")}</h2>
+            <p className="text-sm text-muted">{t("multiDeviceText")}</p>
+            <Button asChild variant="outline" size="sm" className="self-start">
+              <Link href="/workspace">{t("splitSameScreen")}</Link>
+            </Button>
+          </Card>
           <DevicesPanel />
 
           <AccessibilityCard />

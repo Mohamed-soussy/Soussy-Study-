@@ -518,7 +518,10 @@
       "teacher": "Teacher",
       "moderator": "Moderator",
       "note": "Only in demo mode. Real roles are set by the school or a moderator."
-    }
+    },
+    "multiDeviceTitle": "Use two devices at once",
+    "multiDeviceText": "Just sign in on both: for example the whiteboard on your phone or iPad and your notes on your laptop. Everything stays in sync. Linking devices below is optional: it adds a shared timer and lets one device play the sound.",
+    "splitSameScreen": "Or split one screen into two"
   },
   "calendar": {
     "title": "Calendar",
@@ -839,7 +842,7 @@
     "enterFull": "Lock in (fullscreen)",
     "exitFull": "Exit fullscreen",
     "left": "You left focus mode for {time}.",
-    "leftCount": "{count, plural, =0 {No tab switches} one {# tab switch} other {# tab switches}}",
+    "leftCount": "Times you left this session: {count}",
     "backIn": "Lock back in",
     "done": "Session done. {minutes} minutes of focus.",
     "remaining": "left",
@@ -889,20 +892,25 @@
       "unclear": "Not sure"
     },
     "checkin": {
-      "phoneTitle": "Quick check",
-      "phoneText": "You've been on your phone for a few minutes. Are you using it to study, or taking a short break? I'd really like your honest answer.",
-      "study": "I'm using it to study",
-      "break": "Honestly, taking a break",
+      "phoneTitle": "Are you on your phone, or studying?",
+      "phoneText": "The camera saw your phone. Be honest: if you were on your phone, take a 5-minute break and then come back fully focused.",
+      "study": "I'm studying (using it for school)",
+      "break": "I was on my phone",
       "emergency": "Emergency",
-      "studyReply": "Got it, thanks! I won't ask again for 10 minutes.",
-      "breakReply": "No problem. I've started a 5-minute break. Enjoy!",
+      "studyReply": "OK, I trust you. Keep going! 💪",
+      "breakReply": "Thanks for being honest. Your 5-minute break has started. Come back focused! ⏱️",
       "emergencyReply": "Session paused. Pick it up when you're ready.",
       "awayText": "Welcome back! I paused your timer while you were away.",
       "tiredText": "You look a bit tired. A 5-minute break and some water could help.",
       "takeBreak": "Take 5 minutes",
       "keepGoing": "Keep going",
       "lookText": "Still with me? Your task is waiting."
-    }
+    },
+    "leftTitle": "You left your focus session",
+    "lockedTitle": "Finish your task first",
+    "lockedText": "Your focus session is locked until the timer ends ({time} left). Stay here and keep going!",
+    "lockedBack": "Back to my task",
+    "lockedEmergency": "Emergency: pause the session"
   },
   "solver": {
     "title": "Solver",
@@ -2047,12 +2055,12 @@
     "schoolRoomText": "{school} · ages {band}",
     "noSchool": "Add your school to see school rooms",
     "noSchoolText": "Settings → Edit profile → School.",
-    "friendsTitle": "Friends room",
-    "friendsText": "A private room for you and friends (same age group), by invite code.",
-    "newFriends": "New friends room",
-    "code": "Code",
+    "friendsTitle": "Create or join a study room",
+    "friendsText": "Create a room to get a code, then share the code with friends. Or type a friend's code to join. Live video, cameras only (no sound), up to 6 people.",
+    "newFriends": "Create a room",
+    "code": "CODE",
     "join": "Join",
-    "friendsRoom": "Friends room {code}",
+    "friendsRoom": "Room {code}",
     "openTitle": "Open rooms (later)",
     "openText": "Rooms between schools open after the KiS pilot, once school rooms have run safely for a month.",
     "people": "{n} / {max}",

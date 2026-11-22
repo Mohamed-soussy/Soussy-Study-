@@ -1,7 +1,6 @@
 import {
   Activity,
   BookMarked,
-  Columns2,
   NotebookPen,
   CalendarDays,
   FileCheck2,
@@ -53,7 +52,6 @@ export const NAV: NavItem[] = [
   { href: "/progress", key: "progress", icon: Trophy },
   { href: "/core", key: "core", icon: GraduationCap },
   { href: "/squads", key: "squads", icon: Users },
-  { href: "/workspace", key: "workspace", icon: Columns2 },
   { href: "/notes", key: "notes", icon: NotebookPen },
   { href: "/teach", key: "teach", icon: School },
   { href: "/moderate", key: "moderate", icon: ShieldCheck, roles: ["moderator"] },

@@ -20,7 +20,8 @@ export interface Tile {
 export type RoomMessage =
   | { type: "snap"; tile: Tile }
   | { type: "react"; from: string; fromNick: string; to: string; emoji?: string; preset?: string }
-  | { type: "leave"; id: string };
+  | { type: "leave"; id: string }
+  | import("./rtc").RtcMessage;
 
 export interface RoomLink {
   send(m: RoomMessage): void;
@@ -28,7 +29,7 @@ export interface RoomLink {
   close(): void;
 }
 
-export const ROOM_LIMIT = 9;
+export const ROOM_LIMIT = 6;
 
 /**
  * Joins a room's channel. Accounts: a private Supabase broadcast channel the database only

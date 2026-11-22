@@ -12,6 +12,7 @@ import { ageOn } from "@/lib/profile/types";
 import { loadProgress } from "@/lib/progress/stats";
 import { openCamera, prepareSafety, takeSnapshot, type View } from "@/lib/rooms/camera";
 import { joinRoom, ROOM_LIMIT, type RoomLink, type RoomMessage, type Tile } from "@/lib/rooms/channel";
+import { iceServers, Mesh } from "@/lib/rooms/rtc";
 import { md5 } from "@/lib/rooms/md5";
 import { currentUnit, elapsedMs, plannedMs, useSession } from "@/lib/session/store";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
@@ -52,11 +53,14 @@ function Room({ topic, title, view, onLeave }: { topic: string; title: string; v
   const [menu, setMenu] = useState<string | null>(null);
   const [reported, setReported] = useState<Set<string>>(new Set());
   const [status, setStatus] = useState<"starting" | "live" | "error">("starting");
+  const [streams, setStreams] = useState<Record<string, MediaStream>>({});
+  const mesh = useRef<Mesh | null>(null);
   const nick = profile.nickname || t("student");
 
   const leave = useCallback(
     (msg?: string) => {
       link.current?.send({ type: "leave", id: myId });
+      mesh.current?.close();
       link.current?.close();
       const stream = video.current?.srcObject as MediaStream | null;
       stream?.getTracks().forEach((tr) => tr.stop());
@@ -101,8 +105,12 @@ function Room({ topic, title, view, onLeave }: { topic: string; title: string; v
           topic,
           id,
           (m: RoomMessage) => {
-            if (m.type === "snap") setTiles((all) => ({ ...all, [m.tile.id]: m.tile }));
-            else if (m.type === "leave") setTiles((all) => Object.fromEntries(Object.entries(all).filter(([k]) => k !== m.id)));
+            if (m.type === "rtc") void mesh.current?.handle(m);
+            else if (m.type === "snap") setTiles((all) => ({ ...all, [m.tile.id]: m.tile }));
+            else if (m.type === "leave") {
+              mesh.current?.drop(m.id);
+              setTiles((all) => Object.fromEntries(Object.entries(all).filter(([k]) => k !== m.id)));
+            }
             else if (m.type === "react" && m.to === id) setIncoming(`${m.fromNick}: ${m.emoji ?? t(`presets.${m.preset}`)}`);
           },
           (n) => {
@@ -110,6 +118,17 @@ function Room({ topic, title, view, onLeave }: { topic: string; title: string; v
           },
         );
         setStatus("live");
+        // Live video, peer to peer. In "blur" view the picture is blurred on this device before it is sent.
+        const outgoing = view === "blur" && video.current ? blurredStream(video.current) : stream;
+        mesh.current = new Mesh(id, outgoing, await iceServers(), (m) => link.current?.send(m), (pid, st) =>
+          setStreams((all) => {
+            const next = { ...all };
+            if (st) next[pid] = st;
+            else delete next[pid];
+            return next;
+          }),
+        );
+        mesh.current.hello();
         const snap = async () => {
           if (!video.current) return;
           const s = await takeSnapshot(video.current, view);
@@ -153,6 +172,7 @@ function Room({ topic, title, view, onLeave }: { topic: string; title: string; v
       clearInterval(checkTimer);
       clearInterval(sweep);
       clearTimeout(closeTimer);
+      mesh.current?.close();
       link.current?.close();
       const stream = videoEl?.srcObject as MediaStream | null;
       stream?.getTracks().forEach((tr) => tr.stop());
@@ -179,7 +199,13 @@ function Room({ topic, title, view, onLeave }: { topic: string; title: string; v
     await getRepo6().reports.create({ target_kind: "room", target_id: topic, reason, details: null, target_user: getSupabaseBrowser() ? tile.id : null }).catch(() => {});
   };
 
-  const others = Object.values(tiles).filter((x) => x.id !== myId);
+  // Everyone we have a snapshot or live video from.
+  const others = [
+    ...Object.values(tiles).filter((x) => x.id !== myId),
+    ...Object.keys(streams)
+      .filter((id) => id !== myId && !tiles[id])
+      .map((id): Tile => ({ id, nick: t("student"), grade: "", subject: "", unit: "", ring: 0, minutesLeft: null, streak: 0, image: null, at: Date.now() })),
+  ];
   const u = currentUnit(session);
 
   return (
@@ -213,18 +239,17 @@ function Room({ topic, title, view, onLeave }: { topic: string; title: string; v
         </div>
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <li className="relative overflow-hidden rounded-[12px] border-2 border-primary bg-surface-2">
-            <video ref={video} muted playsInline className="hidden" />
-            {mine ? (
-              // eslint-disable-next-line @next/next/no-img-element -- local snapshot data URL
-              <img src={mine} alt={t("you")} className="aspect-[4/3] w-full object-cover" />
-            ) : (
+            <video ref={video} muted playsInline className={cn("aspect-[4/3] w-full -scale-x-100 object-cover", view === "blur" && "blur-md", status !== "live" && !mine && "hidden")} aria-label={t("you")} />
+            {status !== "live" && !mine && (
               <div className="flex aspect-[4/3] items-center justify-center text-muted">{status === "starting" ? <Loader2 className="animate-spin" /> : <Camera />}</div>
             )}
             <TileInfo nick={`${nick} (${t("you")})`} subject={u?.subject ? profile.enrollments.find((e) => e.subjectId === u.subject)?.name ?? "" : ""} unit={u?.name ?? ""} ring={plannedMs(session) ? Math.min(1, elapsedMs(session) / plannedMs(session)) : 0} streak={streak} />
           </li>
           {others.map((o) => (
             <li key={o.id} className="relative overflow-hidden rounded-[12px] border border-border bg-surface-2">
-              {o.image ? (
+              {streams[o.id] ? (
+                <RemoteVideo stream={streams[o.id]} label={t("tileOf", { nick: o.nick })} blur={reported.has(o.id)} />
+              ) : o.image ? (
                 // eslint-disable-next-line @next/next/no-img-element -- snapshot from the room channel
                 <img src={o.image} alt={t("tileOf", { nick: o.nick })} className={cn("aspect-[4/3] w-full object-cover", reported.has(o.id) && "blur-xl")} />
               ) : (
@@ -268,6 +293,34 @@ function Room({ topic, title, view, onLeave }: { topic: string; title: string; v
       <p className="text-xs text-muted">{t("privacy")}</p>
     </div>
   );
+}
+
+/** Another student's live camera (video only, no sound). */
+function RemoteVideo({ stream, label, blur }: { stream: MediaStream; label: string; blur: boolean }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    if (ref.current && ref.current.srcObject !== stream) {
+      ref.current.srcObject = stream;
+      ref.current.play().catch(() => {});
+    }
+  }, [stream]);
+  return <video ref={ref} autoPlay muted playsInline aria-label={label} className={cn("aspect-[4/3] w-full object-cover", blur && "blur-xl")} />;
+}
+
+/** A blurred copy of the camera (about 12 frames a second), made on this device before sending. */
+function blurredStream(v: HTMLVideoElement): MediaStream {
+  const c = document.createElement("canvas");
+  c.width = 320;
+  c.height = 240;
+  const ctx = c.getContext("2d")!;
+  const draw = () => {
+    if (!v.srcObject) return;
+    ctx.filter = "blur(10px)";
+    ctx.drawImage(v, 0, 0, c.width, c.height);
+    setTimeout(draw, 80);
+  };
+  draw();
+  return c.captureStream(12);
 }
 
 function TileInfo({ nick, subject, unit, ring, streak }: { nick: string; subject: string; unit: string; ring: number; streak: number }) {
@@ -317,9 +370,10 @@ export default function RoomsPage() {
       /* ignore */
     }
     if (sb) {
-      sb.rpc("room_block_reason").then(({ data, error }) => setBlock(error ? "unavailable" : ((data as string) ?? "")));
+      // Only a moderator ban blocks rooms now (no age restriction; migration 0009).
+      sb.rpc("room_block_reason").then(({ data, error }) => setBlock(error ? "" : data === "banned" ? "banned" : ""));
     } else {
-      setBlock(band === null ? "no_age" : band === "under13" ? "too_young" : band !== "18+" ? "needs_guardian" : "");
+      setBlock(""); // no age restriction
     }
   }, [sb, band]);
 
@@ -349,9 +403,8 @@ export default function RoomsPage() {
 
   const school = profile.school?.trim();
   const enter = (key: string, title: string, friends = false) => {
-    if (band === null || band === "under13") return;
     setNotice("");
-    setRoom({ topic: `room:${band}:${friends ? "friends" : md5(school ?? "")}:${key}`.slice(0, 200), title });
+    setRoom({ topic: `room:all:${friends ? "code" : md5(school ?? "")}:${key}`.slice(0, 200), title });
   };
 
   return (
@@ -430,6 +483,26 @@ export default function RoomsPage() {
         </Card>
       ) : (
         <>
+          <Card className="flex flex-col gap-3 border-primary/40 p-5">
+            <h2 className="text-lg font-semibold">{t("friendsTitle")}</h2>
+            <p className="text-sm text-muted">{t("friendsText")}</p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const c = Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[b % 32]).join("");
+                  setCode(c);
+                  enter(c, t("friendsRoom", { code: c }), true);
+                }}
+              >
+                {t("newFriends")}
+              </Button>
+              <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const c = code.trim().toUpperCase(); if (c.length >= 4) enter(c, t("friendsRoom", { code: c }), true); }}>
+                <Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 8))} placeholder={t("code")} aria-label={t("code")} className="h-10 w-32 font-mono" />
+                <Button type="submit" disabled={code.trim().length < 4}>{t("join")}</Button>
+              </form>
+            </div>
+          </Card>
           <Card className="flex flex-wrap items-center gap-3 p-4">
             <span className="text-sm font-medium">{t("camera")}</span>
             <Select value={view} onChange={(e) => setView(e.target.value as View)} className="h-9 w-auto" aria-label={t("camera")}>
@@ -455,26 +528,6 @@ export default function RoomsPage() {
               <EmptyState title={t("noSchool")} text={t("noSchoolText")} />
             )}
           </section>
-          <Card className="flex flex-col gap-3 p-4">
-            <h2 className="font-semibold">{t("friendsTitle")}</h2>
-            <p className="text-sm text-muted">{t("friendsText")}</p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  const c = Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[b % 32]).join("");
-                  setCode(c);
-                  enter(c, t("friendsRoom", { code: c }), true);
-                }}
-              >
-                {t("newFriends")}
-              </Button>
-              <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const c = code.trim().toUpperCase(); if (c.length >= 4) enter(c, t("friendsRoom", { code: c }), true); }}>
-                <Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 8))} placeholder={t("code")} aria-label={t("code")} className="h-10 w-32 font-mono" />
-                <Button type="submit" disabled={code.trim().length < 4}>{t("join")}</Button>
-              </form>
-            </div>
-          </Card>
           <Card className="flex items-start gap-3 p-4">
             <Lock className="mt-0.5 size-5 shrink-0 text-muted" aria-hidden />
             <div>

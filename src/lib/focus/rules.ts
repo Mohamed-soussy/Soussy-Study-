@@ -43,7 +43,7 @@ const CHECK_IN_COOLDOWN = 10 * 60 * 1000;
 /** A phone check-in can come back sooner than the others: 3 minutes. */
 const PHONE_COOLDOWN = 3 * 60 * 1000;
 /** How long a phone must be in view (within the last minute) before we check in. */
-const PHONE_MS = 20_000;
+const PHONE_MS = 10_000;
 
 /**
  * Adds one sample and returns the events to show. `activeRecently` = the student
@@ -98,7 +98,7 @@ export function step(
     lastCheckIn = now;
   }
 
-  // Phone: in view for ~20 s of the last minute (relaxed 30 s, strict 14 s) → a friendly check-in.
+  // Phone: in view for ~10 s of the last minute (relaxed 15 s, strict 7 s) → a friendly check-in.
   const phoneMs = timeWith(samples.filter((x) => now - x.t <= 60_000), (x) => x.phone);
   if (phoneMs >= PHONE_MS * f && now - lastCheckIn >= PHONE_COOLDOWN && !events.some((e) => e === "lookAway" || e === "tired")) {
     events.push("phone");
