@@ -242,7 +242,7 @@ function WhiteboardPage() {
         </p>
       )}
 
-      <div className={cn("grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]", full && "fixed inset-0 z-50 overflow-y-auto bg-bg p-3 lg:grid-cols-[minmax(0,1fr)_340px]")}>
+      <div className={cn("grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]", full && "fixed inset-0 z-[60] overflow-y-auto bg-background p-3 lg:grid-cols-[minmax(0,1fr)_340px]")}>
         <section className="flex min-w-0 flex-col gap-3">
           {lesson ? (
             <>

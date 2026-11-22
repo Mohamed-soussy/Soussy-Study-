@@ -1,14 +1,15 @@
 "use client";
 
-import { Calculator, Eraser, Eye, LineChart, MessageCircleQuestion, PenLine, Pencil, Plus, Sigma, Trash2, X } from "lucide-react";
+import { Calculator, Eraser, Eye, LineChart, Loader2, MessageCircleQuestion, PenLine, Pencil, Plus, ShieldCheck, Sigma, Trash2, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Markdown } from "@/components/hub/markdown";
 import { Button } from "@/components/ui/button";
-import { Card, Input, PageHeader } from "@/components/ui/primitives";
-import { deleteNotebook, listNotebooks, newNotebook, newTab, saveNotebook, type Notebook } from "@/lib/notes/store";
+import { useCurrentProfile } from "@/components/shell/profile-context";
+import { Card, Field, Input, PageHeader, Select } from "@/components/ui/primitives";
+import { deleteNotebook, listNotebooks, newNotebook, newTab, notebookKind, saveNotebook, type Notebook } from "@/lib/notes/store";
 import { cn } from "@/lib/utils";
 
 const DrawPad = dynamic(() => import("@/components/notes/draw-pad").then((m) => m.DrawPad), { ssr: false });
@@ -34,6 +35,13 @@ const SNIPPETS: { label: string; insert: string }[] = [
  */
 export default function NotesPage() {
   const t = useTranslations("notes");
+  const profile = useCurrentProfile();
+  // New notebook: first ask which subject it's for, so it only gets the tools it needs.
+  const [asking, setAsking] = useState(false);
+  const [newSubject, setNewSubject] = useState("");
+  const [newOther, setNewOther] = useState("");
+  const [newName, setNewName] = useState("");
+  const [aiCheck, setAiCheck] = useState<{ busy: boolean; text?: string }>({ busy: false });
   const [books, setBooks] = useState<Notebook[]>([]);
   const [bookId, setBookId] = useState<string | null>(null);
   const [tabId, setTabId] = useState<string | null>(null);
@@ -85,13 +93,29 @@ export default function NotesPage() {
 
   const lines = useMemo(() => Math.max(1, (tab?.content ?? "").split("\n").length), [tab?.content]);
 
+  const subjectName = (code: string | null) => (code?.startsWith("other:") ? code.slice(6) : profile.enrollments.find((e) => e.subjectId === code)?.name);
+  const kind = notebookKind(subjectName(book?.subject_code ?? null) ?? book?.title);
+
   const addBook = async () => {
-    const nb = newNotebook(t("untitled"));
+    const code = newSubject === "__other" ? (newOther.trim() ? `other:${newOther.trim()}` : null) : newSubject || null;
+    const nb = newNotebook(newName.trim() || subjectName(code) || t("untitled"));
+    nb.subject_code = code;
     setBooks((all) => [nb, ...all]);
     setBookId(nb.id);
     setTabId(nb.tabs[0].id);
-    setRenaming(nb.id);
+    setAsking(false);
+    setNewName("");
+    setNewOther("");
+    setSide("none");
     await saveNotebook(nb);
+  };
+
+  const runAiCheck = async () => {
+    if (!tab?.content.trim()) return;
+    setAiCheck({ busy: true });
+    const res = await fetch("/api/ai-detect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: tab.content }) }).catch(() => null);
+    const j = res ? await res.json().catch(() => ({})) : {};
+    setAiCheck({ busy: false, text: res?.ok ? t("aiScore", { pct: Math.round((j.score ?? 0) * 100) }) : (j.message ?? t("aiFailed")) });
   };
   const addTab = () => {
     if (!book) return;
@@ -122,9 +146,32 @@ export default function NotesPage() {
       <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
         {/* Notebooks */}
         <aside className="flex min-w-0 flex-col gap-2">
-          <Button size="sm" onClick={addBook}>
+          <Button size="sm" onClick={() => setAsking(true)}>
             <Plus aria-hidden /> {t("newBook")}
           </Button>
+          {asking && (
+            <Card className="flex flex-col gap-3 p-3">
+              <p className="text-sm font-semibold">{t("whichSubject")}</p>
+              <Field label={t("subject")} htmlFor="nb-subject">
+                <Select id="nb-subject" value={newSubject} onChange={(e) => setNewSubject(e.target.value)}>
+                  <option value="">{t("noSubject")}</option>
+                  {profile.enrollments.map((e) => (
+                    <option key={e.subjectId} value={e.subjectId}>{e.name}</option>
+                  ))}
+                  <option value="__other">{t("otherSubject")}</option>
+                </Select>
+              </Field>
+              {newSubject === "__other" && <Input value={newOther} onChange={(e) => setNewOther(e.target.value)} placeholder={t("otherPlaceholder")} aria-label={t("otherSubject")} dir="auto" />}
+              <Field label={t("bookName")} htmlFor="nb-name">
+                <Input id="nb-name" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={t("bookNamePlaceholder")} dir="auto" />
+              </Field>
+              <p className="text-xs text-muted">{t("toolsHint")}</p>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={addBook}>{t("create")}</Button>
+                <Button size="sm" variant="ghost" onClick={() => setAsking(false)}>{t("cancel")}</Button>
+              </div>
+            </Card>
+          )}
           <ul className="flex gap-1 overflow-x-auto lg:flex-col">
             {books.map((b) => (
               <li key={b.id} className="shrink-0">
@@ -133,6 +180,8 @@ export default function NotesPage() {
                   onClick={() => {
                     setBookId(b.id);
                     setTabId(b.tabs[0]?.id ?? null);
+                    setSide("none");
+                    setAiCheck({ busy: false });
                   }}
                   className={cn("w-full truncate rounded-[8px] px-3 py-2 text-start text-sm", b.id === bookId ? "bg-primary-soft font-semibold text-primary" : "hover:bg-surface-2")}
                   dir="auto"
@@ -189,7 +238,7 @@ export default function NotesPage() {
                   </button>
                 ))}
               </div>
-              {mode === "write" && (
+              {mode === "write" && kind === "calc" && (
                 <div className="flex flex-wrap items-center gap-1" aria-label={t("math")}>
                   <Sigma className="size-4 text-muted" aria-hidden />
                   {SNIPPETS.map((s) => (
@@ -208,15 +257,31 @@ export default function NotesPage() {
                 </>
               )}
               <div className="ms-auto flex flex-wrap gap-1">
-                <Button size="sm" variant={side === "calc" ? "primary" : "outline"} onClick={() => setSide((s) => (s === "calc" ? "none" : "calc"))}><Calculator aria-hidden />{t("calculator")}</Button>
-                <Button size="sm" variant={side === "graph" ? "primary" : "outline"} onClick={() => setSide((s) => (s === "graph" ? "none" : "graph"))}><LineChart aria-hidden />Desmos</Button>
+                {kind === "calc" && (
+                  <>
+                    <Button size="sm" variant={side === "calc" ? "primary" : "outline"} onClick={() => setSide((s) => (s === "calc" ? "none" : "calc"))}><Calculator aria-hidden />{t("calculator")}</Button>
+                    <Button size="sm" variant={side === "graph" ? "primary" : "outline"} onClick={() => setSide((s) => (s === "graph" ? "none" : "graph"))}><LineChart aria-hidden />Desmos</Button>
+                  </>
+                )}
+                {kind === "writing" && (
+                  <Button size="sm" variant="outline" onClick={runAiCheck} disabled={aiCheck.busy || !tab.content.trim()}>
+                    {aiCheck.busy ? <Loader2 className="animate-spin" aria-hidden /> : <ShieldCheck aria-hidden />}
+                    {t("aiCheck")}
+                  </Button>
+                )}
                 <Button size="sm" variant="outline" asChild>
                   <Link href={`/hub?notes=${encodeURIComponent(book.id)}&tab=${encodeURIComponent(tab.id)}`}><MessageCircleQuestion aria-hidden />{t("askAi")}</Link>
                 </Button>
               </div>
             </div>
 
-            <div className={cn("grid gap-3", side !== "none" && "xl:grid-cols-[minmax(0,1fr)_420px]")}>
+            {kind === "writing" && aiCheck.text && (
+              <p className="rounded-[10px] bg-surface-2 p-3 text-sm" role="status">
+                {aiCheck.text} <span className="text-xs text-muted">{t("aiNote")}</span>
+              </p>
+            )}
+            {kind === "writing" && mode === "write" && <p className="text-xs text-muted">{t("words", { n: tab.content.trim() ? tab.content.trim().split(/\s+/).length : 0 })}</p>}
+            <div className={cn("grid gap-3", side !== "none" && kind === "calc" && "xl:grid-cols-[minmax(0,1fr)_420px]")}>
               {mode === "write" ? (
                 <div className="flex min-h-[60vh] overflow-hidden rounded-[var(--radius-card)] border border-border bg-surface focus-within:border-primary">
                   <div ref={gutter} className="select-none overflow-hidden border-e border-border bg-surface-2 px-2 py-4 text-end font-mono text-xs leading-7 text-muted" aria-hidden>
@@ -241,7 +306,7 @@ export default function NotesPage() {
               ) : (
                 <DrawPad tool={tool} clearKey={clearKey} />
               )}
-              {side !== "none" && (
+              {side !== "none" && kind === "calc" && (
                 <Card className="overflow-hidden p-0">
                   <iframe
                     key={side}
@@ -253,7 +318,7 @@ export default function NotesPage() {
                 </Card>
               )}
             </div>
-            <p className="text-xs text-muted">{t("mathHint")}</p>
+            <p className="text-xs text-muted">{kind === "calc" ? t("mathHint") : t("aiHint")}</p>
           </section>
         )}
       </div>

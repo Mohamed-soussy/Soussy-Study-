@@ -118,3 +118,12 @@ export function matchNotes(q: string, books: Notebook[], max = 2): { book: Noteb
   }
   return out.sort((a, b) => b.score - a.score).slice(0, max);
 }
+
+/** Which tools a notebook gets: maths/science subjects get a calculator and Desmos; essay subjects get the AI-writing check. */
+export type NotebookKind = "calc" | "writing" | "general";
+export function notebookKind(subjectName: string | undefined | null): NotebookKind {
+  const n = (subjectName ?? "").toLowerCase();
+  if (/math|physic|chem|biolog|scien|econ|business|comput|statist|engineer|account|design|further|calculus|algebra|geometr|رياض|فيزياء|كيمياء|أحياء|اقتصاد/.test(n)) return "calc";
+  if (/english|literat|language|arab|french|spanish|german|chinese|latin|history|philosoph|knowledge|tok|extended essay|psycholog|politic|geograph|anthropolog|essay|writing|عرب|إنجليز|أدب|تاريخ|فلسف/.test(n)) return "writing";
+  return "general";
+}

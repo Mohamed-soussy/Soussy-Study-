@@ -1220,7 +1220,22 @@
     "askAi": "Ask AI about this tab",
     "placeholderMath": "Type your notes. Math: $x^2 + 3x$ or a block between $$ lines. Double-click a tab to rename it.",
     "empty": "Nothing here yet.",
-    "mathHint": "Tip: in the Study Hub, ask “in my Math notes, tab 8.1, I don't understand line 4” and the AI reads that tab."
+    "mathHint": "Tip: in the Study Hub, ask “in my Math notes, tab 8.1, I don't understand line 4” and the AI reads that tab.",
+    "whichSubject": "Which subject is this notebook for?",
+    "subject": "Subject",
+    "noSubject": "General (no subject)",
+    "otherSubject": "Another subject…",
+    "otherPlaceholder": "e.g. Physics HL",
+    "bookNamePlaceholder": "e.g. Unit 8: Integration",
+    "toolsHint": "Maths and science notebooks get a calculator and Desmos. English and essay subjects get the AI-writing check.",
+    "create": "Create",
+    "cancel": "Cancel",
+    "aiCheck": "Check for AI writing",
+    "aiScore": "This tab looks about {pct}% AI-written.",
+    "aiFailed": "The AI check didn't work.",
+    "aiNote": "Detectors can be wrong; use it as a hint only.",
+    "words": "{n} words",
+    "aiHint": "Tip: ask the Study Hub “in my notes, tab 2, is my thesis clear?” and the AI reads that tab."
   },
   "lessons": {
     "title": "Lessons",
