@@ -47,7 +47,7 @@ const PHONE_COOLDOWN = 3 * 60 * 1000;
 /** How long a phone must be in view (within the last minute) before we check in. */
 const PHONE_MS = 10_000;
 /** Eyes away from the screen this long → check-in; and at most one such check-in every 90 s. */
-const LOOK_MS = 8_000;
+const LOOK_MS = 6_000;
 const LOOK_COOLDOWN = 90_000;
 
 /**
@@ -87,7 +87,9 @@ export function step(
   // Eyes off the screen (left, right or up, or head turned) for ~8 s → "Are you still focusing?".
   // Looking down while typing or writing is normal studying, so that only counts when idle.
   const g = s.gaze ?? (s.yaw > 30 ? "left" : "screen");
-  const lookingAway = s.face && (g === "left" || g === "right" || g === "up" || s.yaw > 30 || (g === "down" && !activeRecently));
+  // Head turned so far that the camera loses the face (but they were here a moment ago) also counts.
+  const faceLostRecently = !s.face && now - lastFace < 60_000;
+  const lookingAway = faceLostRecently || (s.face && (g === "left" || g === "right" || g === "up" || s.yaw > 30 || (g === "down" && !activeRecently)));
   if (lookingAway) lookingSince ??= now;
   else lookingSince = null;
   const lookLimit = (g === "down" ? 20_000 : LOOK_MS) * f;

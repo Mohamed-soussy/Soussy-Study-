@@ -827,7 +827,8 @@
     "exitFull": "Exit full screen",
     "board": "Board {n} of {total}",
     "voice": "Voice",
-    "tooSlow": "That took too long. Try again, or pick \"Quick\" for a faster lesson."
+    "tooSlow": "That took too long. Try again, or pick \"Quick\" for a faster lesson.",
+    "voiceBlocked": "Your browser held back the voice, so I'm drawing with captions. Tap Pause, then Play, to hear it."
   },
   "focus": {
     "title": "Focus room",
@@ -916,7 +917,28 @@
     "lockedTitle": "Finish your task first",
     "lockedText": "Your focus session is locked until the timer ends ({time} left). Stay here and keep going!",
     "lockedBack": "Back to my task",
-    "lockedEmergency": "Emergency: pause the session"
+    "lockedEmergency": "Emergency: pause the session",
+    "guard": {
+      "tabTitle": "⏰ Come back! Your focus session is running",
+      "notifyTitle": "Your focus session is still running",
+      "notifyBody": "Come back to Soussy Study and finish your task 💪",
+      "backTitle": "Welcome back! Keep going",
+      "backButton": "Back to studying",
+      "motivation": {
+        "1": "Every minute you focus now is a minute you won't stress before the exam. Let's keep going!",
+        "2": "You're closer than you think. Finish this task and you'll feel amazing.",
+        "3": "Discipline is choosing what you want most over what you want now. Back to it!",
+        "4": "Your future self is cheering for you right now. Don't let them down.",
+        "5": "Small steps every day add up to big results. One more step now.",
+        "6": "The hardest part was starting, and you already did that. Keep the streak alive!",
+        "7": "Champions train when nobody is watching. This is your training.",
+        "8": "Focus for a few more minutes, then you've earned a real break.",
+        "9": "You didn't come this far to only come this far. Let's finish strong!",
+        "10": "Distractions will still be there later. Your exam won't wait. Back to work!",
+        "11": "Great students aren't born, they're built one focused session at a time.",
+        "12": "Stay with it. Future you, holding a 7, says thank you."
+      }
+    }
   },
   "solver": {
     "title": "Solver",
@@ -1235,7 +1257,12 @@
     "aiFailed": "The AI check didn't work.",
     "aiNote": "Detectors can be wrong; use it as a hint only.",
     "words": "{n} words",
-    "aiHint": "Tip: ask the Study Hub “in my notes, tab 2, is my thesis clear?” and the AI reads that tab."
+    "aiHint": "Tip: ask the Study Hub “in my notes, tab 2, is my thesis clear?” and the AI reads that tab.",
+    "tabKindQuestion": "What is this tab for?",
+    "kindCalc": "Maths & science (calculator + Desmos)",
+    "kindWriting": "English / essay (AI-writing check)",
+    "kindGeneral": "Other",
+    "tabTools": "Tools for this tab"
   },
   "lessons": {
     "title": "Lessons",

@@ -94,7 +94,15 @@ export default function NotesPage() {
   const lines = useMemo(() => Math.max(1, (tab?.content ?? "").split("\n").length), [tab?.content]);
 
   const subjectName = (code: string | null) => (code?.startsWith("other:") ? code.slice(6) : profile.enrollments.find((e) => e.subjectId === code)?.name);
-  const kind = notebookKind(subjectName(book?.subject_code ?? null) ?? book?.title);
+  const bookKind = notebookKind(subjectName(book?.subject_code ?? null) ?? book?.title);
+  const kind = tab?.kind ?? bookKind;
+  const [askTab, setAskTab] = useState(false);
+  const setTabKind = (k: "calc" | "writing" | "general") => {
+    if (!book || !tab) return;
+    update({ ...book, tabs: book.tabs.map((x) => (x.id === tab.id ? { ...x, kind: k } : x)) });
+    setSide("none");
+    setAiCheck({ busy: false });
+  };
 
   const addBook = async () => {
     const code = newSubject === "__other" ? (newOther.trim() ? `other:${newOther.trim()}` : null) : newSubject || null;
@@ -117,9 +125,12 @@ export default function NotesPage() {
     const j = res ? await res.json().catch(() => ({})) : {};
     setAiCheck({ busy: false, text: res?.ok ? t("aiScore", { pct: Math.round((j.score ?? 0) * 100) }) : (j.message ?? t("aiFailed")) });
   };
-  const addTab = () => {
+  const addTab = (k: "calc" | "writing" | "general") => {
     if (!book) return;
-    const tb = newTab(t("tabN", { n: book.tabs.length + 1 }));
+    setAskTab(false);
+    setSide("none");
+    setAiCheck({ busy: false });
+    const tb = newTab(t("tabN", { n: book.tabs.length + 1 }), k);
     update({ ...book, tabs: [...book.tabs, tb] });
     setTabId(tb.id);
     setRenaming(tb.id);
@@ -225,8 +236,18 @@ export default function NotesPage() {
                   )}
                 </div>
               ))}
-              <Button size="sm" variant="ghost" onClick={addTab} className="shrink-0"><Plus aria-hidden /> {t("addTab")}</Button>
+              <Button size="sm" variant="ghost" onClick={() => setAskTab((v) => !v)} className="shrink-0" aria-expanded={askTab}><Plus aria-hidden /> {t("addTab")}</Button>
             </div>
+            {askTab && (
+              <Card className="flex flex-col gap-3 p-3">
+                <p className="text-sm font-semibold">{t("tabKindQuestion")}</p>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <Button variant="outline" onClick={() => addTab("calc")}>🧮 {t("kindCalc")}</Button>
+                  <Button variant="outline" onClick={() => addTab("writing")}>✍️ {t("kindWriting")}</Button>
+                  <Button variant="ghost" onClick={() => addTab("general")}>📝 {t("kindGeneral")}</Button>
+                </div>
+              </Card>
+            )}
 
             {/* Toolbar */}
             <div className="flex flex-wrap items-center gap-2">
@@ -256,7 +277,17 @@ export default function NotesPage() {
                   <Button size="sm" variant="ghost" onClick={() => setClearKey((k) => k + 1)}><Trash2 aria-hidden />{t("clear")}</Button>
                 </>
               )}
-              <div className="ms-auto flex flex-wrap gap-1">
+              <div className="ms-auto flex flex-wrap items-center gap-1">
+                <select
+                  value={kind}
+                  onChange={(e) => setTabKind(e.target.value as "calc" | "writing" | "general")}
+                  aria-label={t("tabTools")}
+                  className="h-8 rounded-[8px] border border-border bg-surface px-2 text-sm"
+                >
+                  <option value="calc">🧮 {t("kindCalc")}</option>
+                  <option value="writing">✍️ {t("kindWriting")}</option>
+                  <option value="general">📝 {t("kindGeneral")}</option>
+                </select>
                 {kind === "calc" && (
                   <>
                     <Button size="sm" variant={side === "calc" ? "primary" : "outline"} onClick={() => setSide((s) => (s === "calc" ? "none" : "calc"))}><Calculator aria-hidden />{t("calculator")}</Button>

@@ -102,7 +102,9 @@ export function SignInForm({ configured }: { configured: boolean }) {
   }
 
   const supabase = getSupabaseBrowser()!;
-  const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined;
+  // Always come back to the real address (never a one-off Vercel link or localhost).
+  const origin = typeof window === "undefined" ? "" : window.location.hostname.endsWith(".vercel.app") || window.location.hostname === "soussy-study.vercel.app" ? `https://${process.env.NEXT_PUBLIC_SITE_HOST || "soussy-study.vercel.app"}` : window.location.origin;
+  const redirectTo = origin ? `${origin}/auth/callback` : undefined;
 
   async function oauth(provider: "google" | "azure") {
     setError(null);

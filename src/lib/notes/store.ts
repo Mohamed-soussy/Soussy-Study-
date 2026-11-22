@@ -8,6 +8,8 @@ export interface NoteTab {
   title: string;
   /** Markdown with math: $x^2$ inline, $$\int x\,dx$$ on its own line. */
   content: string;
+  /** Tools for this tab: calculator + Desmos ("calc"), AI-writing check ("writing"), or none. */
+  kind?: "calc" | "writing" | "general";
 }
 
 export interface Notebook {
@@ -22,7 +24,7 @@ const LOCAL = "soussy.notebooks";
 const OLD_TEXT = "soussy.notes.text";
 const uid = () => crypto.randomUUID();
 
-export const newTab = (title = "Tab 1"): NoteTab => ({ id: uid(), title, content: "" });
+export const newTab = (title = "Tab 1", kind?: NoteTab["kind"]): NoteTab => ({ id: uid(), title, content: "", kind });
 export const newNotebook = (title = "Untitled notebook"): Notebook => ({ id: uid(), title, subject_code: null, tabs: [newTab()], updated_at: new Date().toISOString() });
 
 function readLocal(): Notebook[] {

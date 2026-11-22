@@ -11,6 +11,7 @@ import { useProfile } from "@/lib/profile/use-profile";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { cn } from "@/lib/utils";
 import { TimerBubble } from "@/components/session/bubble";
+import { FocusGuard } from "@/components/focus/focus-guard";
 import { DeviceSync, sendToOtherDevice } from "@/components/devices/device-sync";
 import { readAloud } from "@/lib/a11y/settings";
 import { SchoolSync } from "@/components/school/school-sync";
@@ -102,6 +103,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         <BottomTabs />
         <TimerBubble />
+        <FocusGuard />
       </div>
     </ProfileContext.Provider>
   );

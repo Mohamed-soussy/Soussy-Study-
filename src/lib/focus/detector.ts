@@ -63,7 +63,7 @@ export async function createDetector(): Promise<Detector> {
       const up = (b("eyeLookUpLeft") + b("eyeLookUpRight")) / 2;
       const down = (b("eyeLookDownLeft") + b("eyeLookDownRight")) / 2;
       const gaze: Signals["gaze"] =
-        !has ? "screen" : left > 0.5 ? "left" : right > 0.5 ? "right" : up > 0.45 || pitch > 22 ? "up" : down > 0.6 || pitch < -28 ? "down" : "screen";
+        !has ? "screen" : left > 0.4 || (left > 0.3 && yaw > 15) ? "left" : right > 0.4 || (right > 0.3 && yaw > 15) ? "right" : up > 0.4 || pitch > 20 ? "up" : down > 0.6 || pitch < -28 ? "down" : "screen";
       return {
         face: has,
         yaw: has ? yaw : 0,

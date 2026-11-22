@@ -196,6 +196,7 @@ export function WhiteboardPlayer({
   const [rate, setRate] = useState(1);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [lasso, setLasso] = useState<number[] | null>(null);
+  const [voiceBlocked, setVoiceBlocked] = useState(false);
   // Natural device voices the student can choose from (remembered per language).
   const vlang = lesson.language === "ar" ? "ar" : "en";
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
@@ -297,13 +298,16 @@ export function WhiteboardPlayer({
       u.rate = 0.95 * rate * (voice?.rate ?? 1);
       u.pitch = voice?.pitch ?? 1;
       let gotBoundary = false;
-      u.onboundary = (e) => {
+      let started = false;
+      const boundary = (e: SpeechSynthesisEvent) => {
         if (e.name && e.name !== "word") return;
         if (!gotBoundary) clearTimers(); // real word timing arrived: drop the estimate
         gotBoundary = true;
         reach(i, wordAt(e.charIndex));
       };
+      u.onboundary = boundary;
       u.onstart = () => {
+        started = true;
         // Some voices never send word boundaries; estimate if none arrive quickly.
         timers.current.push(window.setTimeout(() => !gotBoundary && estimate(1), 600));
       };
@@ -313,12 +317,25 @@ export function WhiteboardPlayer({
         estimate(0);
         timers.current.push(window.setTimeout(next, list.length * msPerWord));
       };
+      synth.resume(); // Chrome can get stuck "paused"
       synth.speak(u);
+      // Watchdog: some browsers silently block speech that didn't start from a tap. If the voice
+      // hasn't started in 1.5 s, carry on with captions so the drawing never stops.
+      timers.current.push(
+        window.setTimeout(() => {
+          if (started) return;
+          synth.cancel();
+          setVoiceBlocked(true);
+          estimate(0);
+          timers.current.push(window.setTimeout(next, list.length * msPerWord + 300));
+        }, 1500),
+      );
     },
     [lesson, muted, rate, reach, stop, onPausedChange, voice],
   );
 
   const play = useCallback(() => {
+    setVoiceBlocked(false);
     playingRef.current = true;
     setPlaying(true);
     setSelectedKey(null);
@@ -472,6 +489,11 @@ export function WhiteboardPlayer({
         )}
       </div>
 
+      {voiceBlocked && !muted && (
+        <p className="rounded-[10px] bg-warning/15 px-3 py-2 text-sm text-text" role="status">
+          {t("voiceBlocked")}
+        </p>
+      )}
       {/* Captions: the sentence being spoken, current word highlighted. */}
       <p className="min-h-[3.2em] rounded-[10px] bg-surface-2/70 px-4 py-2 text-[15px] leading-7" dir="auto" aria-live="polite" data-testid="caption">
         {list.map((w, i) => (

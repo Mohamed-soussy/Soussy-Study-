@@ -11,6 +11,7 @@ import { initialRuleState, step, wasWrong, type FocusEvent, type RuleState, type
 
 import { breakLeftMs, currentUnit, elapsedMs, plannedMs, serverNow, session, syncServerTime, useSession } from "@/lib/session/store";
 import { cn } from "@/lib/utils";
+import { CAM_FLAG } from "@/components/focus/focus-guard";
 
 /* ---------- small storage helpers (per device conveniences) ---------- */
 const PREFS = "soussy.focus.prefs";
@@ -78,7 +79,6 @@ export default function FocusPage() {
   const [fullscreen, setFullscreen] = useState(false);
   const [leaves, setLeaves] = useState(0);
   const [awayNotice, setAwayNotice] = useState<string | null>(null);
-  const [lockNotice, setLockNotice] = useState(false);
   const leftAt = useRef<number | null>(null);
 
   // Camera
@@ -154,30 +154,6 @@ export default function FocusPage() {
     return () => clearTimeout(id);
   }, [checkIn]);
 
-  // Locked until the timer ends: links to other pages and the Back button are held.
-  useEffect(() => {
-    if (mode !== "focus" && mode !== "paused" && mode !== "break") return;
-    const onClick = (e: MouseEvent) => {
-      const a = (e.target as HTMLElement | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
-      if (!a || a.target === "_blank") return;
-      const url = new URL(a.href, location.href);
-      if (url.origin !== location.origin || url.pathname === "/focus") return;
-      e.preventDefault();
-      e.stopPropagation();
-      setLockNotice(true);
-    };
-    const onPop = () => {
-      history.pushState(null, "", location.href);
-      setLockNotice(true);
-    };
-    history.pushState(null, "", location.href);
-    document.addEventListener("click", onClick, true);
-    window.addEventListener("popstate", onPop);
-    return () => {
-      document.removeEventListener("click", onClick, true);
-      window.removeEventListener("popstate", onPop);
-    };
-  }, [mode]);
 
   // Ask before closing the tab mid-session.
   useEffect(() => {
@@ -196,6 +172,11 @@ export default function FocusPage() {
   }
 
   function start() {
+    try {
+      if ("Notification" in window && Notification.permission === "default") void Notification.requestPermission();
+    } catch {
+      /* ignore */
+    }
     session.start([{ name: task.trim() || t("taskPlaceholder"), subject: null, minutes }], 0);
     setLeaves(0);
     rulesRef.current = initialRuleState(Date.now());
@@ -226,6 +207,11 @@ export default function FocusPage() {
       }
       detectorRef.current = await createDetector();
       setCamState("on");
+      try {
+        localStorage.setItem(CAM_FLAG, "1"); // keep checking on other pages during the session
+      } catch {
+        /* ignore */
+      }
     } catch (err) {
       stopCamera();
       setCamState(err instanceof DOMException && err.name === "NotAllowedError" ? "denied" : "unsupported");
@@ -254,7 +240,7 @@ export default function FocusPage() {
       if (!v || !d || v.readyState < 2) return;
       const s = d.detect(v);
       setSignals(s);
-      if (modeRef.current === "focus" || modeRef.current === "paused") {
+      if (modeRef.current !== "break" && modeRef.current !== "done") {
         const active = Date.now() - lastActivity.current < 30_000;
         const r = step(rulesRef.current, Date.now(), s, active, prefs.sensitivity);
         rulesRef.current = r.state;
@@ -449,28 +435,6 @@ export default function FocusPage() {
               </Card>
             </div>
           )}
-          {lockNotice && (
-            <div className="fixed inset-0 z-[70] grid place-items-center bg-black/75 p-4">
-              <Card className="flex w-full max-w-xl flex-col gap-4 p-6 text-lg shadow-2xl sm:p-8" role="alertdialog" aria-modal>
-                <p className="text-5xl" aria-hidden>🔒</p>
-                <p className="text-2xl font-bold">{t("lockedTitle")}</p>
-                <p>{t("lockedText", { time: fmt(Math.max(0, left)) })}</p>
-                <Button size="lg" onClick={() => setLockNotice(false)}>
-                  {t("lockedBack")}
-                </Button>
-                <button
-                  type="button"
-                  className="self-center text-sm text-muted underline"
-                  onClick={() => {
-                    setLockNotice(false);
-                    setMode("paused");
-                  }}
-                >
-                  {t("lockedEmergency")}
-                </button>
-              </Card>
-            </div>
-          )}
           {checkIn && (
             <div className={cn(!checkIn.reply && "fixed inset-0 z-[70] grid place-items-center bg-black/75 p-4")}>
             <Card className={cn("flex flex-col gap-3 border-primary/40 p-4", !checkIn.reply && "w-full max-w-xl gap-5 p-6 text-lg shadow-2xl sm:p-8")} role={checkIn.reply ? "status" : "alertdialog"} aria-modal={!checkIn.reply} data-testid="checkin">
@@ -628,7 +592,18 @@ export default function FocusPage() {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {camState === "on" || camState === "loading" ? (
-                    <Button size="sm" variant="outline" onClick={stopCamera}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        stopCamera();
+                        try {
+                          localStorage.removeItem(CAM_FLAG);
+                        } catch {
+                          /* ignore */
+                        }
+                      }}
+                    >
                       <CameraOff aria-hidden />
                       {cam("off")}
                     </Button>
