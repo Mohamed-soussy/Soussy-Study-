@@ -15,6 +15,8 @@ export interface Signals {
   yawn: boolean;
   /** A phone is visible. */
   phone: boolean;
+  /** Where the eyes point (from the eye blendshapes and head angle). */
+  gaze?: "screen" | "left" | "right" | "up" | "down";
 }
 
 export type Sensitivity = "relaxed" | "normal" | "strict";
@@ -44,6 +46,9 @@ const CHECK_IN_COOLDOWN = 10 * 60 * 1000;
 const PHONE_COOLDOWN = 3 * 60 * 1000;
 /** How long a phone must be in view (within the last minute) before we check in. */
 const PHONE_MS = 10_000;
+/** Eyes away from the screen this long → check-in; and at most one such check-in every 90 s. */
+const LOOK_MS = 8_000;
+const LOOK_COOLDOWN = 90_000;
 
 /**
  * Adds one sample and returns the events to show. `activeRecently` = the student
@@ -79,11 +84,14 @@ export function step(
     }
   }
 
-  // Looking away for 30 s while nothing happens in the app → gentle nudge.
-  const lookingAway = s.face && s.yaw > 35;
-  if (lookingAway && !activeRecently) lookingSince ??= now;
+  // Eyes off the screen (left, right or up, or head turned) for ~8 s → "Are you still focusing?".
+  // Looking down while typing or writing is normal studying, so that only counts when idle.
+  const g = s.gaze ?? (s.yaw > 30 ? "left" : "screen");
+  const lookingAway = s.face && (g === "left" || g === "right" || g === "up" || s.yaw > 30 || (g === "down" && !activeRecently));
+  if (lookingAway) lookingSince ??= now;
   else lookingSince = null;
-  if (lookingSince !== null && now - lookingSince >= 30_000 * f && canCheckIn) {
+  const lookLimit = (g === "down" ? 20_000 : LOOK_MS) * f;
+  if (lookingSince !== null && now - lookingSince >= lookLimit && now - lastCheckIn >= LOOK_COOLDOWN) {
     events.push("lookAway");
     lookingSince = null;
     lastCheckIn = now;

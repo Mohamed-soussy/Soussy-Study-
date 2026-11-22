@@ -55,12 +55,22 @@ export async function createDetector(): Promise<Detector> {
       // Head turn (yaw) from the face transform matrix (column-major 4×4).
       const m = f.facialTransformationMatrixes?.[0]?.data;
       const yaw = m ? Math.abs((Math.atan2(m[8], m[10]) * 180) / Math.PI) : 0;
+      const pitch = m ? (Math.atan2(-m[9], Math.hypot(m[8], m[10])) * 180) / Math.PI : 0;
+      // Eye direction: when looking left, the left eye looks "out" and the right eye looks "in".
+      const b = (k: string) => shapes.get(k) ?? 0;
+      const left = (b("eyeLookOutLeft") + b("eyeLookInRight")) / 2;
+      const right = (b("eyeLookInLeft") + b("eyeLookOutRight")) / 2;
+      const up = (b("eyeLookUpLeft") + b("eyeLookUpRight")) / 2;
+      const down = (b("eyeLookDownLeft") + b("eyeLookDownRight")) / 2;
+      const gaze: Signals["gaze"] =
+        !has ? "screen" : left > 0.5 ? "left" : right > 0.5 ? "right" : up > 0.45 || pitch > 22 ? "up" : down > 0.6 || pitch < -28 ? "down" : "screen";
       return {
         face: has,
         yaw: has ? yaw : 0,
         eyesClosed: has && blink > 0.55,
         yawn: has && (shapes.get("jawOpen") ?? 0) > 0.6,
         phone: o.detections.length > 0,
+        gaze,
       };
     },
     close() {

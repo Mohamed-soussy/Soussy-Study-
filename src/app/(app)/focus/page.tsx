@@ -299,7 +299,7 @@ export default function FocusPage() {
         ? sig("phone")
         : signals.eyesClosed
           ? sig("drowsy")
-          : signals.yaw > 35
+          : signals.yaw > 30 || (signals.gaze && signals.gaze !== "screen" && signals.gaze !== "down")
             ? sig("away")
             : sig("present")
     : null;
@@ -505,6 +505,20 @@ export default function FocusPage() {
                       }}
                     >
                       {ci("emergency")}
+                    </Button>
+                  </div>
+                </>
+              ) : checkIn.kind === "lookAway" ? (
+                <>
+                  <p className="text-5xl" aria-hidden>👀</p>
+                  <p className="text-2xl font-bold">{ci("lookTitle")}</p>
+                  <p>{ci("lookText")}</p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Button size="lg" onClick={() => { if (modeRef.current === "paused") setMode("focus"); setCheckIn({ kind: "lookAway", reply: ci("studyReply") }); }}>
+                      📚 {ci("lookFocused")}
+                    </Button>
+                    <Button size="lg" variant="secondary" onClick={() => { setMode("break"); setCheckIn({ kind: "lookAway", reply: ci("breakReply") }); }}>
+                      ☕ {ci("lookDistracted")}
                     </Button>
                   </div>
                 </>

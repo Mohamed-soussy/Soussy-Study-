@@ -907,7 +907,10 @@
       "tiredText": "You look a bit tired. A 5-minute break and some water could help.",
       "takeBreak": "Take 5 minutes",
       "keepGoing": "Keep going",
-      "lookText": "Still with me? Your task is waiting."
+      "lookText": "You looked away from your screen for a while. Are you still focusing on your task?",
+      "lookTitle": "Eyes on the screen?",
+      "lookFocused": "Yes, I'm focusing",
+      "lookDistracted": "I got distracted (5-min break)"
     },
     "leftTitle": "You left your focus session",
     "lockedTitle": "Finish your task first",
