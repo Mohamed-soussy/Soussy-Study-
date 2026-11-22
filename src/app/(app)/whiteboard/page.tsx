@@ -138,8 +138,12 @@ function WhiteboardPage() {
     }
     setLoading(true);
     try {
+      // Never wait forever: give up after 2.5 minutes with a clear message.
+      const ctrl = new AbortController();
+      const stopper = setTimeout(() => ctrl.abort(), 150_000);
       const res = await fetch("/api/whiteboard", {
         method: "POST",
+        signal: ctrl.signal,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           topic: tp,
@@ -150,15 +154,16 @@ function WhiteboardPage() {
           detail,
         }),
       });
-      const data = (await res.json()) as { lesson?: Lesson; cached?: boolean; message?: string };
-      if (!res.ok || !data.lesson) throw new Error(data.message ?? String(res.status));
+      clearTimeout(stopper);
+      const data = (await res.json().catch(() => ({}))) as { lesson?: Lesson; cached?: boolean; message?: string };
+      if (!res.ok || !data.lesson) throw new Error(data.message ?? (res.status === 504 ? t("tooSlow") : String(res.status)));
       setLesson(data.lesson);
       setCached(Boolean(data.cached));
       const next = [{ key, topic: tp, lesson: data.lesson }, ...recent.filter((r) => r.key !== key)];
       setRecent(next);
       saveRecent(next);
     } catch (err) {
-      setError(t("error", { message: err instanceof Error ? err.message : "?" }));
+      setError(err instanceof Error && err.name === "AbortError" ? t("tooSlow") : t("error", { message: err instanceof Error ? err.message : "?" }));
     } finally {
       setLoading(false);
     }

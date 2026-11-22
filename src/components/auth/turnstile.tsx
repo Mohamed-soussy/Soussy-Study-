@@ -42,11 +42,13 @@ export interface TurnstileHandle {
  * Robot check (Cloudflare Turnstile, free). Usually invisible; sometimes asks for one tap.
  * Supabase verifies the token with the secret key set in Authentication → Attack Protection.
  */
-export const Turnstile = forwardRef<TurnstileHandle, { onToken: (token: string | null) => void; language?: string }>(function Turnstile({ onToken, language }, ref) {
+export const Turnstile = forwardRef<TurnstileHandle, { onToken: (token: string | null) => void; onFail?: (code: string) => void; language?: string }>(function Turnstile({ onToken, onFail, language }, ref) {
   const box = useRef<HTMLDivElement>(null);
   const id = useRef<string | null>(null);
   const cb = useRef(onToken);
   cb.current = onToken;
+  const fail = useRef(onFail);
+  fail.current = onFail;
 
   useImperativeHandle(ref, () => ({
     reset() {
@@ -68,10 +70,16 @@ export const Turnstile = forwardRef<TurnstileHandle, { onToken: (token: string |
           language: language ?? "auto",
           callback: (t: string) => cb.current(t),
           "expired-callback": () => cb.current(null),
-          "error-callback": () => cb.current(null),
+          "error-callback": (code: string) => {
+            cb.current(null);
+            fail.current?.(String(code ?? ""));
+          },
         });
       })
-      .catch(() => cb.current(null));
+      .catch(() => {
+        cb.current(null);
+        fail.current?.("load");
+      });
     return () => {
       cancelled = true;
       if (id.current && window.turnstile) window.turnstile.remove(id.current);

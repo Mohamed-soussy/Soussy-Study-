@@ -57,7 +57,9 @@
     "errNetwork": "No connection. Check your internet and try again.",
     "forgot": "Forgot password?",
     "forgotNeedEmail": "Type your email above first.",
-    "forgotSent": "Check your inbox for a link to set a new password."
+    "forgotSent": "Check your inbox for a link to set a new password.",
+    "captchaDomain": "The robot check is set up for a different website address (Cloudflare error {code}). Please use “Continue with Google” for now. Site owner: add soussy-study.vercel.app to the Turnstile widget's hostnames.",
+    "captchaDown": "The robot check couldn't load (error {code}). Use “Continue with Google”, or refresh the page."
   },
   "legal": {
     "title": "Terms, privacy and community rules",
@@ -824,7 +826,8 @@
     "fullScreen": "Full screen",
     "exitFull": "Exit full screen",
     "board": "Board {n} of {total}",
-    "voice": "Voice"
+    "voice": "Voice",
+    "tooSlow": "That took too long. Try again, or pick \"Quick\" for a faster lesson."
   },
   "focus": {
     "title": "Focus room",

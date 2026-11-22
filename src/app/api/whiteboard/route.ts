@@ -59,13 +59,16 @@ export async function POST(req: NextRequest) {
   if (blocked) return blocked;
 
   try {
-    const raw = await geminiJSON<unknown>(detail === "quick" ? ROUTES.whiteboardLesson : ROUTES.whiteboardLong, {
+    // Quick and detailed start on the fast model; only full lessons use the bigger ones.
+    // One try per model and a hard time limit, so the student never waits minutes.
+    const raw = await geminiJSON<unknown>(detail === "full" ? ROUTES.whiteboardLong : ROUTES.whiteboardLesson, {
       system: WHITEBOARD_SYSTEM,
       prompt: whiteboardPrompt({ topic, subject: body.subject, level: body.level, curriculum: body.curriculum, language, detail }),
       schema: WHITEBOARD_SCHEMA,
       maxOutputTokens: detail === "full" ? 32000 : detail === "detailed" ? 20000 : 8192,
       minimalThinking: true,
-      timeoutMs: detail === "quick" ? 60000 : 110000,
+      timeoutMs: detail === "full" ? 90000 : detail === "detailed" ? 50000 : 35000,
+      rounds: 1,
     });
     const lesson: Lesson = sanitizeLesson(raw, language);
     if (!lesson.segments.length) return NextResponse.json({ error: "empty", message: "The AI returned an empty lesson. Try again." }, { status: 502 });

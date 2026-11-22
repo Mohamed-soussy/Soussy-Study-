@@ -53,7 +53,7 @@ export const ROUTES = {
     models: ["gemini-3.1-flash-lite", "gemini-3-flash-preview", "gemini-3.5-flash"],
   },
   /** Detailed / full lessons: the stronger Flash models follow long instructions far better. */
-  whiteboardLong: { engine: "gemini", data: "public", models: ["gemini-3-flash-preview", "gemini-3.5-flash", "gemini-3.1-flash-lite"] },
+  whiteboardLong: { engine: "gemini", data: "public", models: ["gemini-3.5-flash", "gemini-3-flash-preview", "gemini-3.1-flash-lite"] },
   /** Focus snapshot check: only when the student switched on cloud checks (opt-in). */
   focusSnapshot: { engine: "gemini", data: "opt-in-image", models: ["gemini-3.1-flash-lite"] },
   /** Embeddings for "search by meaning" (open-source, multilingual, 1024 dimensions). */
@@ -82,7 +82,7 @@ export class EngineError extends Error {
 export function engineConfigured(engine: Engine): boolean {
   if (engine === "gemini") return Boolean(process.env.GEMINI_API_KEY);
   // Mistral is the free overflow for Groq: either key is enough to run the personal-data features.
-  if (engine === "groq") return Boolean(process.env.GROQ_API_KEY || process.env.MISTRAL_API_KEY);
+  if (engine === "groq") return Boolean(process.env.GROQ_API_KEY || process.env.MISTRAL_API_KEY || (process.env.GEMINI_API_KEY && geminiFallbackAllowed()));
   if (engine === "mistral") return Boolean(process.env.MISTRAL_API_KEY);
   return Boolean(process.env.HUGGINGFACE_ACCESS_TOKEN);
 }
@@ -156,6 +156,8 @@ export async function geminiJSON<T>(
     /** Lowest thinking for tiny checks (saves tokens). */
     minimalThinking?: boolean;
     timeoutMs?: number;
+    /** 1 = try each model once, no waiting on rate limits (for things the student is watching). */
+    rounds?: number;
   },
 ): Promise<T> {
   assertPrivacy("gemini", route.data);
@@ -200,9 +202,9 @@ export async function geminiJSON<T>(
     try {
       return JSON.parse(text) as T;
     } catch {
-      throw new EngineError("gemini", "failed", `Gemini returned unreadable JSON (${data.candidates?.[0]?.finishReason ?? "?"}).`);
+      throw new EngineError("gemini", "busy", `Gemini returned unreadable JSON (${data.candidates?.[0]?.finishReason ?? "?"}).`);
     }
-  });
+  }, args.rounds ?? 2);
 }
 
 /* ---------------- Groq (OpenAI-compatible) ---------------- */
@@ -232,14 +234,39 @@ const OVERFLOW_CODES = ["rate_limited", "busy", "timeout", "no_credits", "not_co
  * Runs on Groq first; if Groq isn't set up, is rate limited, busy or out of credits,
  * and a Mistral key exists, runs the same request on Mistral instead.
  */
-async function groqThenMistral<T>(onGroq: (key: string) => Promise<T>, onMistral: (key: string) => Promise<T>): Promise<T> {
+async function groqThenMistral<T>(onGroq: (key: string) => Promise<T>, onMistral: (key: string) => Promise<T>, onGemini?: (key: string) => Promise<T>): Promise<T> {
   const mistral = process.env.MISTRAL_API_KEY;
+  const overflow = (err: unknown) => err instanceof EngineError && OVERFLOW_CODES.includes(err.code);
   try {
     return await onGroq(groqKey());
   } catch (err) {
-    if (!mistral || !(err instanceof EngineError) || !OVERFLOW_CODES.includes(err.code)) throw err;
-    return onMistral(mistral);
+    if (!overflow(err)) throw err;
+    let last = err;
+    if (mistral) {
+      try {
+        return await onMistral(mistral);
+      } catch (e) {
+        if (!overflow(e)) throw e;
+        last = e;
+      }
+    }
+    // Emergency switch (off by default): the site owner allowed personal features to use Gemini
+    // when Groq and Mistral both fail. Google's free tier may use this data to improve its products.
+    const gem = process.env.GEMINI_API_KEY;
+    if (onGemini && gem && geminiFallbackAllowed()) return onGemini(gem);
+    throw last;
   }
+}
+
+/** ALLOW_GEMINI_FALLBACK=1 in the server settings turns on the emergency switch. */
+export function geminiFallbackAllowed() {
+  return /^(1|true|yes|on)$/i.test(process.env.ALLOW_GEMINI_FALLBACK?.trim() ?? "");
+}
+
+const GEMINI_COMPAT = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+const GEMINI_CHAT = ["gemini-3.1-flash-lite", "gemini-3-flash-preview"] as const;
+function geminiCompatPost(key: string, body: Record<string, unknown>, timeoutMs = 60000) {
+  return withFallback(GEMINI_CHAT, (model) => post("gemini", GEMINI_COMPAT, { Authorization: `Bearer ${key}` }, { model, ...body }, timeoutMs), 1);
 }
 
 /** Mistral takes the same messages; images go as a plain data-URL string. */
@@ -311,6 +338,20 @@ export async function groqJSON<T>(
         throw new EngineError("mistral", "failed", "Mistral returned unreadable JSON.");
       }
     },
+    async (key) => {
+      const res = await geminiCompatPost(key, {
+        messages: args.messages,
+        max_tokens: Math.max(4000, (args.maxTokens ?? 2000) * 2),
+        reasoning_effort: "low",
+        response_format: { type: "json_schema", json_schema: { name: args.name, strict: true, schema: args.schema } },
+      });
+      const data = (await res.json()) as { choices: { message: { content: string } }[] };
+      try {
+        return JSON.parse(data.choices[0].message.content.replace(/^```(?:json)?\s*|\s*```$/g, "")) as T;
+      } catch {
+        throw new EngineError("gemini", "failed", "Gemini returned unreadable JSON.");
+      }
+    },
   );
 }
 
@@ -333,6 +374,11 @@ export async function groqText(route: { engine: "groq"; models: readonly string[
       const data = (await res.json()) as { choices: { message: { content: string } }[] };
       return clean(data.choices[0]?.message?.content ?? "");
     },
+    async (key) => {
+      const res = await geminiCompatPost(key, { messages, max_tokens: Math.max(3000, maxTokens * 2), reasoning_effort: "low" });
+      const data = (await res.json()) as { choices: { message: { content: string } }[] };
+      return clean(data.choices[0]?.message?.content ?? "");
+    },
   );
 }
 
@@ -346,6 +392,7 @@ export async function* groqStream(route: { engine: "groq"; models: readonly stri
         process.env.MISTRAL_API_KEY ? 1 : 2,
       ),
     (key) => mistralPost(key, { messages: mistralMessages(messages), stream: true, max_tokens: maxTokens }),
+    (key) => geminiCompatPost(key, { messages, stream: true, max_tokens: Math.max(3000, maxTokens * 2), reasoning_effort: "low" }),
   );
   const reader = res.body!.getReader();
   const dec = new TextDecoder();

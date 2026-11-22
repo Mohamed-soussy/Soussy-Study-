@@ -219,7 +219,7 @@ export function SignInForm({ configured }: { configured: boolean }) {
             onChange={(e) => setPassword(e.target.value)}
           />
         </Field>
-        <Turnstile ref={turnstile} onToken={setCaptcha} language={locale} />
+        <Turnstile ref={turnstile} onToken={setCaptcha} onFail={(code) => setError(t(code.startsWith("1102") ? "captchaDomain" : "captchaDown", { code }))} language={locale} />
         {error && (
           <p className="text-sm text-danger" role="alert">
             {error}
