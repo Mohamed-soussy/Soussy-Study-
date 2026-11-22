@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Markdown } from "@/components/hub/markdown";
 import { useCurrentProfile } from "@/components/shell/profile-context";
+import { UploadFromDevice } from "@/components/hub/upload-from-device";
 import { Button } from "@/components/ui/button";
 import { Card, Chip, Input, PageHeader, Select } from "@/components/ui/primitives";
 import { curriculumName, getPack } from "@/curriculum";
@@ -325,6 +326,12 @@ export default function SolverPage() {
 
             {tab === "file" && (
               <div className="flex flex-wrap gap-2">
+                <UploadFromDevice
+                  onReady={(f) => {
+                    setFiles((list) => [f, ...list.filter((x) => x.id !== f.id)]);
+                    setFileId(f.id);
+                  }}
+                />
                 <Select aria-label={t("pickFile")} value={fileId} onChange={(e) => setFileId(e.target.value)} className="w-auto min-w-0 flex-1">
                   <option value="">{t("pickFile")}</option>
                   {files.map((f) => (

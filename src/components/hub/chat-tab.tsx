@@ -22,6 +22,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCurrentProfile } from "@/components/shell/profile-context";
+import { UploadFromDevice } from "@/components/hub/upload-from-device";
 import { Button } from "@/components/ui/button";
 import { Toast } from "@/components/ui/drawer";
 import { Card, Input, Select } from "@/components/ui/primitives";
@@ -634,6 +635,7 @@ function SourcesPrompt({ files, onDone }: { files: VaultFile[]; onDone: (patch: 
             <FileText aria-hidden />
             {t("pickFiles")}
           </Button>
+          <UploadFromDevice variant="secondary" onReady={(f) => onDone({ source_file_ids: [f.id], sources_answered: true })} />
           <Button variant="secondary" size="sm" onClick={() => setMode("link")}>
             <Link2 aria-hidden />
             {t("addLink")}

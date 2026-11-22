@@ -36,7 +36,7 @@ async function tavily(query: string, key: string): Promise<TavilyResult[]> {
   const res = await fetch("https://api.tavily.com/search", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-    body: JSON.stringify({ query, search_depth: "basic", max_results: 8, include_answer: false }),
+    body: JSON.stringify({ query: query.slice(0, 380), search_depth: "advanced", max_results: 8, include_answer: false }),
     signal: AbortSignal.timeout(20000),
   });
   if (!res.ok) throw new Error(`search ${res.status}`);
@@ -51,22 +51,33 @@ async function tavily(query: string, key: string): Promise<TavilyResult[]> {
 export async function POST(req: NextRequest) {
   const blocked = await guardAi();
   if (blocked) return blocked;
-  const b = (await req.json()) as { curriculum?: string; course?: string; unit?: string; topic?: string; want?: string };
+  const b = (await req.json()) as { curriculum?: string; curriculumLabel?: string; grade?: string; course?: string; unit?: string; topic?: string; details?: string; want?: string };
+  const details = (b.details ?? "").replace(/\s+/g, " ").trim().slice(0, 600);
+  const label = (b.curriculumLabel ?? "").slice(0, 80);
+  const grade = (b.grade ?? "").slice(0, 30);
   const course = (b.course ?? "").slice(0, 80);
   const unit = (b.unit ?? "").slice(0, 120);
   const topic = (b.topic ?? "").slice(0, 120);
-  if (!course || !(unit || topic)) return NextResponse.json({ error: "bad_request" }, { status: 400 });
+  if (!course || !(unit || topic || details)) return NextResponse.json({ error: "bad_request" }, { status: 400 });
   const official = OFFICIAL_PAPERS[b.curriculum ?? ""] ?? [];
   const wantsPapers = /past ?paper|exam paper|markscheme|mark scheme/i.test(`${b.want} ${topic}`);
 
   const key = process.env.TAVILY_API_KEY;
   if (!key) return NextResponse.json({ demo: true, results: DEMO, official });
 
-  const base = `${course} ${unit} ${topic}`.replace(/\s+/g, " ").trim();
+  // Deep search: the exact request first, then notes past students shared, then practice and video.
+  const base = `${label} ${course} ${grade} ${unit} ${topic}`.replace(/\s+/g, " ").trim();
+  const specific = details ? `${details} ${label} ${course}`.replace(/\s+/g, " ").trim() : "";
   const queries =
     b.want && b.want !== "all"
-      ? [`${base} ${wantsPapers ? "exam style questions" : b.want}`]
-      : [`${base} revision notes`, `${base} practice questions with answers`, `${base} explained video`];
+      ? [specific ? `${specific} ${wantsPapers ? "exam style questions" : b.want}` : "", `${base} ${wantsPapers ? "exam style questions" : b.want}`].filter(Boolean)
+      : [
+          ...(specific ? [`${specific} notes analysis`, `${specific} study guide summary`] : []),
+          `${base} revision notes`,
+          `${base} student notes summary`,
+          `${base} practice questions with answers`,
+          `${base} explained video`,
+        ];
   let raw: TavilyResult[] = [];
   try {
     raw = (await Promise.all(queries.map((q) => tavily(q, key).catch(() => [])))).flat();
@@ -78,14 +89,14 @@ export async function POST(req: NextRequest) {
     .filter((r) => r.url && !isBlocked(r.url) && !seen.has(r.url) && seen.add(r.url))
     .map((r) => ({ ...r, tier: tierOf(r.url) }))
     .sort((a, b) => a.tier - b.tier || b.score - a.score)
-    .slice(0, 12);
+    .slice(0, 16);
 
   let enriched: Enriched["results"] = [];
   if (results.length && engineConfigured("gemini")) {
     try {
       const out = await geminiJSON<Enriched>(ROUTES.resources, {
         system: ENRICH_SYSTEM,
-        prompt: `Course: ${course}. Unit: ${unit}${topic ? `, topic: ${topic}` : ""}.\n\n${results.map((r, i) => `[${i + 1}] ${r.title}\n${r.url}\n${r.content.slice(0, 600)}`).join("\n\n")}`,
+        prompt: `Course: ${label} ${course}${grade ? `, ${grade}` : ""}. Unit: ${unit}${topic ? `, topic: ${topic}` : ""}.${details ? `\nThe student needs exactly: ${details}\nMark a result relevant only if it really helps with that.` : ""}\n\n${results.map((r, i) => `[${i + 1}] ${r.title}\n${r.url}\n${r.content.slice(0, 600)}`).join("\n\n")}`,
         schema: ENRICH_SCHEMA,
         maxOutputTokens: 3000,
         minimalThinking: true,

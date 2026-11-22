@@ -8,7 +8,7 @@ import { useCurrentProfile } from "@/components/shell/profile-context";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Card, Chip, EmptyState, Field, Input, Select } from "@/components/ui/primitives";
-import { getPack } from "@/curriculum";
+import { curriculumName, getPack, GRADES, PACK_IDS } from "@/curriculum";
 import { unitsFor } from "@/curriculum/units";
 import { getRepo6 } from "@/lib/data/repo6";
 import { cn } from "@/lib/utils";
@@ -32,6 +32,10 @@ export function ResourceFinder() {
   const profile = useCurrentProfile();
   const pack = getPack(profile.packId);
   const [subject, setSubject] = useState(profile.enrollments[0]?.subjectId ?? "");
+  const [packId, setPackId] = useState(profile.packId ?? "custom");
+  const [grade, setGrade] = useState(profile.grade ? String(profile.grade) : "");
+  const [otherSubject, setOtherSubject] = useState("");
+  const [details, setDetails] = useState("");
   const [unit, setUnit] = useState("");
   const [topic, setTopic] = useState("");
   const [want, setWant] = useState("all");
@@ -41,9 +45,9 @@ export function ResourceFinder() {
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const [questions, setQuestions] = useState<{ title: string; text: string | null } | null>(null);
 
-  const enrollment = profile.enrollments.find((e) => e.subjectId === subject);
+  const enrollment = subject === "__other" ? undefined : profile.enrollments.find((e) => e.subjectId === subject);
   const units = enrollment ? unitsFor(profile.packId, enrollment.subjectId) : [];
-  const course = enrollment ? `${pack?.id === "ib-dp" || pack?.id === "ib-cp" ? "IB " : pack?.id === "ib-myp" ? "IB MYP " : ""}${enrollment.name}${enrollment.level && enrollment.level !== "None" ? ` ${enrollment.level}` : ""}` : "";
+  const course = subject === "__other" ? otherSubject.trim() : enrollment ? `${pack?.id === "ib-dp" || pack?.id === "ib-cp" ? "IB " : pack?.id === "ib-myp" ? "IB MYP " : ""}${enrollment.name}${enrollment.level && enrollment.level !== "None" ? ` ${enrollment.level}` : ""}` : "";
 
   const search = async () => {
     setBusy(true);
@@ -52,7 +56,7 @@ export function ResourceFinder() {
       const res = await fetch("/api/resources/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ curriculum: profile.packId, course, unit, topic, want }),
+        body: JSON.stringify({ curriculum: packId, curriculumLabel: curriculumName(packId) ?? "", grade: grade ? (grade === "13" ? "university" : `grade ${grade}`) : "", course, unit, topic, details, want }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message ?? t("failed"));
@@ -84,9 +88,28 @@ export function ResourceFinder() {
           className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
           onSubmit={(e) => {
             e.preventDefault();
-            if (subject && (unit || topic)) search();
+            if (course && (unit || topic || details)) search();
           }}
         >
+          <Field label={t("curriculum")} htmlFor="find-curr">
+            <Select id="find-curr" value={packId} onChange={(e) => setPackId(e.target.value)}>
+              {PACK_IDS.map((id) => (
+                <option key={id} value={id}>
+                  {curriculumName(id) ?? t("otherCurriculum")}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label={t("grade")} htmlFor="find-grade">
+            <Select id="find-grade" value={grade} onChange={(e) => setGrade(e.target.value)}>
+              <option value="">{t("anyGrade")}</option>
+              {GRADES.map((g) => (
+                <option key={g} value={String(g)}>
+                  {g === 13 ? t("university") : t("gradeN", { n: g })}
+                </option>
+              ))}
+            </Select>
+          </Field>
           <Field label={t("subject")} htmlFor="find-subject">
             <Select id="find-subject" value={subject} onChange={(e) => { setSubject(e.target.value); setUnit(""); }}>
               {profile.enrollments.map((e) => (
@@ -94,7 +117,9 @@ export function ResourceFinder() {
                   {e.name} {e.level !== "None" ? e.level : ""}
                 </option>
               ))}
+              <option value="__other">{t("otherSubject")}</option>
             </Select>
+            {subject === "__other" && <Input className="mt-2" value={otherSubject} onChange={(e) => setOtherSubject(e.target.value)} placeholder={t("otherSubjectPlaceholder")} dir="auto" aria-label={t("otherSubject")} />}
           </Field>
           <Field label={t("unit")} htmlFor="find-unit">
             {units.length ? (
@@ -123,7 +148,21 @@ export function ResourceFinder() {
             </Select>
           </Field>
           <div className="sm:col-span-2 lg:col-span-4">
-            <Button type="submit" disabled={busy || !subject || !(unit || topic)}>
+            <Field label={t("details")} htmlFor="find-details">
+              <textarea
+                id="find-details"
+                value={details}
+                onChange={(e) => setDetails(e.target.value)}
+                rows={2}
+                maxLength={600}
+                dir="auto"
+                placeholder={t("detailsPlaceholder")}
+                className="w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-base focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
+              />
+            </Field>
+          </div>
+          <div className="sm:col-span-2 lg:col-span-4">
+            <Button type="submit" disabled={busy || !course || !(unit || topic || details)}>
               {busy ? <Loader2 className="animate-spin" /> : <Search aria-hidden />}
               {t("search")}
             </Button>

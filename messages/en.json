@@ -775,7 +775,9 @@
       }
     },
     "pageShort": "p. {page}",
-    "lessons": "Lessons"
+    "lessons": "Lessons",
+    "uploadDevice": "Upload from my device",
+    "reading": "Reading {name}…"
   },
   "whiteboard": {
     "title": "AI Whiteboard",
@@ -1018,7 +1020,10 @@
     "wrongWas": "The answer was: {answer}",
     "fileCards": "Make flashcards",
     "deckMade": "Deck created with {count} cards",
-    "aiOff": "The AI isn't connected, so make an empty deck and add cards yourself."
+    "aiOff": "The AI isn't connected, so make an empty deck and add cards yourself.",
+    "fromTopic": "Type a topic",
+    "topicLabel": "What should the cards cover?",
+    "topicPlaceholder": "e.g. IB Biology: cell membrane transport (diffusion, osmosis, active transport)"
   },
   "bubble": {
     "label": "Focus timer",
@@ -1463,7 +1468,17 @@
       "questions": "Make questions from this",
       "questionsTitle": "Practice questions",
       "questionsNote": "Original questions in the style of \"{title}\", written by the AI. Not copied from the resource or any past paper.",
-      "close": "Close"
+      "close": "Close",
+      "curriculum": "Curriculum",
+      "otherCurriculum": "Other / my own",
+      "grade": "Grade",
+      "anyGrade": "Any grade",
+      "university": "University",
+      "gradeN": "Grade {n}",
+      "otherSubject": "Another subject…",
+      "otherSubjectPlaceholder": "e.g. IB English A Literature HL",
+      "details": "Be specific (what exactly do you need?)",
+      "detailsPlaceholder": "e.g. The Bear by Andrew Krivak: notes on characterization and the girl's relationship with nature, pages 97–108"
     },
     "community": {
       "subject": "Subject",

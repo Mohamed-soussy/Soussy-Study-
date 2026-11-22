@@ -775,7 +775,9 @@
       }
     },
     "pageShort": "ص {page}",
-    "lessons": "الحصص"
+    "lessons": "الحصص",
+    "uploadDevice": "ارفع من جهازي",
+    "reading": "جارٍ قراءة {name}…"
   },
   "whiteboard": {
     "title": "السبورة الذكية",
@@ -1018,7 +1020,10 @@
     "wrongWas": "الإجابة كانت: {answer}",
     "fileCards": "اصنع بطاقات",
     "deckMade": "أُنشئت مجموعة من {count} بطاقة",
-    "aiOff": "الذكاء الاصطناعي غير متصل، فأنشئ مجموعة فارغة وأضف البطاقات بنفسك."
+    "aiOff": "الذكاء الاصطناعي غير متصل، فأنشئ مجموعة فارغة وأضف البطاقات بنفسك.",
+    "fromTopic": "اكتب موضوعًا",
+    "topicLabel": "ماذا تغطي البطاقات؟",
+    "topicPlaceholder": "مثلاً: أحياء IB: النقل عبر غشاء الخلية (الانتشار، الأسموزية، النقل النشط)"
   },
   "bubble": {
     "label": "مؤقت التركيز",
@@ -1463,7 +1468,17 @@
       "questions": "اصنع أسئلة منه",
       "questionsTitle": "أسئلة تدريبية",
       "questionsNote": "أسئلة جديدة بأسلوب \"{title}\" كتبها الذكاء الاصطناعي، وليست منسوخة من المصدر أو من أي اختبار سابق.",
-      "close": "إغلاق"
+      "close": "إغلاق",
+      "curriculum": "المنهج",
+      "otherCurriculum": "آخر / منهجي الخاص",
+      "grade": "الصف",
+      "anyGrade": "أي صف",
+      "university": "الجامعة",
+      "gradeN": "الصف {n}",
+      "otherSubject": "مادة أخرى…",
+      "otherSubjectPlaceholder": "مثلاً: IB English A Literature HL",
+      "details": "كن محددًا (ماذا تحتاج بالضبط؟)",
+      "detailsPlaceholder": "مثلاً: رواية The Bear: ملاحظات عن بناء الشخصيات وعلاقة الفتاة بالطبيعة، الصفحات 97–108"
     },
     "community": {
       "subject": "المادة",

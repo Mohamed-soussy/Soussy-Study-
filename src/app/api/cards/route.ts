@@ -30,9 +30,10 @@ export async function POST(req: NextRequest) {
   if (missing) return missing;
   const blocked = await guardAi();
   if (blocked) return blocked;
-  const b = (await req.json()) as { text?: string; count?: number; subject?: string; language?: string };
+  const b = (await req.json()) as { text?: string; topic?: string; count?: number; subject?: string; language?: string; curriculum?: string };
   const text = (b.text ?? "").slice(0, 14000);
-  if (text.trim().length < 20) return NextResponse.json({ error: "too_short" }, { status: 400 });
+  const topic = (b.topic ?? "").trim().slice(0, 1500);
+  if (text.trim().length < 20 && topic.length < 3) return NextResponse.json({ error: "too_short" }, { status: 400 });
   const count = Math.min(30, Math.max(4, Number(b.count) || 12));
   try {
     const out = await groqJSON<{ cards: { front: string; back: string }[] }>(ROUTES.cards, {
@@ -42,12 +43,17 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: "user",
-          content: `Make ${count} flashcards from these study notes${b.subject ? ` (${b.subject})` : ""}.
+          content:
+            text.trim().length >= 20
+              ? `Make ${count} flashcards from these study notes${b.subject ? ` (${b.subject})` : ""}${topic ? `, focusing on: ${topic}` : ""}.
 Rules: one fact or idea per card; the front is a short question or term; the back is a short, exact answer (under 25 words); use only facts in the notes; plain text with Unicode math (no LaTeX). Language: ${b.language === "ar" ? "Arabic" : "the language of the notes"}.
 
 <notes>
 ${text}
-</notes>`,
+</notes>`
+              : `Make ${count} flashcards that teach this topic for a high school student${b.subject ? ` taking ${b.subject}` : ""}${b.curriculum ? ` (${b.curriculum})` : ""}:
+${topic}
+Rules: cover the key terms, definitions, formulas, dates, characters or steps the syllabus expects; one fact or idea per card; the front is a short question or term; the back is a short, exact, accurate answer (under 30 words); if unsure of a fact, leave it out. Plain text with Unicode math (no LaTeX). Language: ${b.language === "ar" ? "Arabic" : "English"}.`,
         },
       ],
     });

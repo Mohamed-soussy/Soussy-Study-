@@ -83,3 +83,6 @@ export function curriculumName(packId?: string | null): string | undefined {
   };
   return packId ? names[packId] : undefined;
 }
+
+/** Every curriculum id, in the order shown in menus ("custom" = other / my own). */
+export const PACK_IDS = ["ib-dp", "ib-myp", "ib-cp", "american-hs", "cambridge", "edexcel", "uk", "saudi", "indian", "french", "custom"] as const;

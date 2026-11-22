@@ -6,7 +6,9 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { MatchGame, StudySession, type Mode } from "@/components/flashcards/study";
 import { useCurrentProfile } from "@/components/shell/profile-context";
+import { UploadFromDevice } from "@/components/hub/upload-from-device";
 import { Button } from "@/components/ui/button";
+import { curriculumName } from "@/curriculum";
 import { Drawer, Toast } from "@/components/ui/drawer";
 import { Card, Chip, EmptyState, Field, Input, PageHeader, Select } from "@/components/ui/primitives";
 import { getRepo } from "@/lib/data/repo";
@@ -326,7 +328,8 @@ function NewDeck({ initialFile, onClose, onCreated, onToast }: { initialFile: st
   const [files, setFiles] = useState<VaultFile[]>([]);
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
-  const [source, setSource] = useState<"file" | "empty">(initialFile ? "file" : "file");
+  const [source, setSource] = useState<"file" | "topic" | "empty">(initialFile ? "file" : "topic");
+  const [topic, setTopic] = useState("");
   const [fileId, setFileId] = useState(initialFile);
   const [count, setCount] = useState(12);
   const [busy, setBusy] = useState(false);
@@ -350,6 +353,19 @@ function NewDeck({ initialFile, onClose, onCreated, onToast }: { initialFile: st
     setBusy(true);
     try {
       let cards: { front: string; back: string }[] = [];
+      if (source === "topic" && topic.trim()) {
+        const res = await fetch("/api/cards", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topic, count, subject: profile.enrollments.find((e) => e.subjectId === subject)?.name, curriculum: curriculumName(profile.packId), language: locale }),
+        });
+        const data = (await res.json()) as { cards?: { front: string; back: string }[]; message?: string };
+        if (!data.cards) {
+          onToast(data.message ?? t("aiOff"));
+          return;
+        }
+        cards = data.cards;
+      }
       if (source === "file" && fileId) {
         const pages = await getRepo().chunks.pages(fileId);
         const res = await fetch("/api/cards", {
@@ -368,7 +384,7 @@ function NewDeck({ initialFile, onClose, onCreated, onToast }: { initialFile: st
         }
         cards = data.cards;
       }
-      const deck = await repo3.decks.create({ name: name.trim() || files.find((f) => f.id === fileId)?.name || t("newDeck"), subject_code: subject || null, source_file_id: source === "file" ? fileId || null : null });
+      const deck = await repo3.decks.create({ name: name.trim() || (source === "topic" ? topic.trim().slice(0, 60) : files.find((f) => f.id === fileId)?.name) || t("newDeck"), subject_code: subject || null, source_file_id: source === "file" ? fileId || null : null });
       if (cards.length) await repo3.cards.createMany(cards.map((c) => ({ deck_id: deck.id, ...c })));
       onCreated(deck, cards.length);
     } finally {
@@ -387,7 +403,7 @@ function NewDeck({ initialFile, onClose, onCreated, onToast }: { initialFile: st
           <Button variant="ghost" onClick={onClose}>
             {t("cancel")}
           </Button>
-          <Button onClick={create} disabled={busy || (source === "file" && !fileId)}>
+          <Button onClick={create} disabled={busy || (source === "file" && !fileId) || (source === "topic" && topic.trim().length < 3)}>
             {busy ? <Loader2 className="animate-spin" aria-hidden /> : null}
             {busy ? t("making") : t("create")}
           </Button>
@@ -409,18 +425,44 @@ function NewDeck({ initialFile, onClose, onCreated, onToast }: { initialFile: st
           </Select>
         </Field>
         <fieldset className="flex flex-col gap-2">
-          {(["file", "empty"] as const).map((s) => (
+          {(["topic", "file", "empty"] as const).map((s) => (
             <label key={s} className={cn("flex cursor-pointer items-start gap-3 rounded-[10px] border p-3", source === s ? "border-primary bg-primary-soft" : "border-border")}>
               <input type="radio" name="source" className="mt-1 accent-[var(--primary)]" checked={source === s} onChange={() => setSource(s)} />
               <span>
-                <span className="block font-medium">{s === "file" ? t("fromFile") : t("emptyDeck")}</span>
+                <span className="block font-medium">{s === "file" ? t("fromFile") : s === "topic" ? t("fromTopic") : t("emptyDeck")}</span>
                 {s === "file" && <span className="text-sm text-muted">{t("fromFileHint")}</span>}
               </span>
             </label>
           ))}
         </fieldset>
+        {source === "topic" && (
+          <>
+            <Field label={t("topicLabel")} htmlFor="deck-topic">
+              <textarea
+                id="deck-topic"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                rows={3}
+                maxLength={1500}
+                dir="auto"
+                placeholder={t("topicPlaceholder")}
+                className="w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-base focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
+              />
+            </Field>
+            <Field label={t("howMany")} htmlFor="deck-count-t">
+              <Input id="deck-count-t" type="number" min={4} max={30} value={count} onChange={(e) => setCount(Number(e.target.value) || 12)} />
+            </Field>
+          </>
+        )}
         {source === "file" && (
           <>
+            <UploadFromDevice
+              onReady={(f) => {
+                setFiles((list) => [f, ...list.filter((x) => x.id !== f.id)]);
+                setFileId(f.id);
+                if (!name) setName(f.name.replace(/\.[^.]+$/, ""));
+              }}
+            />
             <Field label={t("file")} htmlFor="deck-file">
               <Select id="deck-file" value={fileId} onChange={(e) => setFileId(e.target.value)}>
                 <option value="">—</option>
