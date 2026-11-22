@@ -21,6 +21,17 @@ export function RubricFeedback({ defaultRubric = "ib_sci_ia" }: { defaultRubric?
   const [error, setError] = useState("");
   const [fb, setFb] = useState<Feedback | null>(null);
   const words = draft.trim() ? draft.trim().split(/\s+/).length : 0;
+  // Optional AI-writing check (Sapling). A hint for the student, never proof.
+  const [ai, setAi] = useState<{ score: number; flagged: string[] } | { message: string } | null>(null);
+  const [aiBusy, setAiBusy] = useState(false);
+  const checkAi = async () => {
+    setAiBusy(true);
+    setAi(null);
+    const res = await fetch("/api/ai-detect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: draft }) }).catch(() => null);
+    const j = res ? await res.json().catch(() => ({})) : {};
+    setAi(res?.ok ? j : { message: j.message ?? t("aiCheckFailed") });
+    setAiBusy(false);
+  };
 
   const go = async () => {
     setBusy(true);
@@ -73,10 +84,28 @@ export function RubricFeedback({ defaultRubric = "ib_sci_ia" }: { defaultRubric?
           />
         </Field>
         {error && <p className="text-sm text-danger" role="alert">{error}</p>}
-        <Button className="self-start" onClick={go} disabled={busy || words < 80}>
-          {busy ? <Loader2 className="animate-spin" /> : <ClipboardCheck aria-hidden />}
-          {t("go")}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={go} disabled={busy || words < 80}>
+            {busy ? <Loader2 className="animate-spin" /> : <ClipboardCheck aria-hidden />}
+            {t("go")}
+          </Button>
+          <Button variant="outline" onClick={checkAi} disabled={aiBusy || words < 40}>
+            {aiBusy ? <Loader2 className="animate-spin" /> : null}
+            {t("aiCheck")}
+          </Button>
+        </div>
+        {ai && "message" in ai && <p className="text-sm text-danger" role="alert">{ai.message}</p>}
+        {ai && "score" in ai && (
+          <div className="rounded-[10px] bg-surface-2 p-3 text-sm" role="status">
+            <p className="font-semibold">{t("aiScore", { pct: Math.round(ai.score * 100) })}</p>
+            {ai.flagged.length > 0 && (
+              <ul className="mt-2 list-disc ps-5 text-muted">
+                {ai.flagged.map((x, i) => <li key={i} dir="auto">{x}</li>)}
+              </ul>
+            )}
+            <p className="mt-2 text-xs text-muted">{t("aiNote")}</p>
+          </div>
+        )}
       </Card>
       {fb && (
         <Card className="flex flex-col gap-4 p-4">

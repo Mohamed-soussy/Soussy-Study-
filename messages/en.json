@@ -1845,7 +1845,11 @@
       "est": "{got} / {max} (estimate)",
       "strengths": "What's working",
       "fixes": "Three fixes",
-      "estimateNote": "An estimate from the AI, not a grade. Your teacher's judgement is what counts."
+      "estimateNote": "An estimate from the AI, not a grade. Your teacher's judgement is what counts.",
+      "aiCheck": "Check for AI writing",
+      "aiCheckFailed": "The AI check didn't work. Try again.",
+      "aiScore": "Looks about {pct}% AI-written",
+      "aiNote": "Detectors make mistakes and can flag human writing. Use this only as a hint to rewrite in your own words."
     }
   },
   "core": {
