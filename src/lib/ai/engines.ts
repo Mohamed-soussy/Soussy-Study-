@@ -433,7 +433,45 @@ export async function groqTranscribe(audio: Blob, opts: { prompt?: string; langu
   return groqThenMistral(
     (key) => transcribeWith("groq", "https://api.groq.com/openai/v1/audio/transcriptions", key, ROUTES.transcribe.models, audio, opts, process.env.MISTRAL_API_KEY ? 1 : 2),
     (key) => transcribeWith("mistral", "https://api.mistral.ai/v1/audio/transcriptions", key, MISTRAL_AUDIO, audio, opts, 2),
+    (key) => geminiTranscribe(key, audio, opts),
   );
+}
+
+/** Emergency switch only: Gemini listens to the chunk and returns timed segments. */
+async function geminiTranscribe(key: string, audio: Blob, opts: { prompt?: string; language?: string }): Promise<{ segments: Segment[]; language: string }> {
+  const b64 = Buffer.from(await audio.arrayBuffer()).toString("base64");
+  return withFallback(GEMINI_CHAT, async (model) => {
+    const res = await post(
+      "gemini",
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      { "x-goog-api-key": key },
+      {
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { inlineData: { mimeType: audio.type || "audio/wav", data: b64 } },
+              { text: `Transcribe this classroom audio word for word. Split it into short segments with start and end times in seconds from the start of this clip. ${opts.prompt ? `Names and subject words that may appear: ${opts.prompt.slice(0, 600)}.` : ""} If nobody speaks, return no segments.` },
+            ],
+          },
+        ],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: { type: "OBJECT", required: ["language", "segments"], properties: { language: { type: "STRING" }, segments: { type: "ARRAY", items: { type: "OBJECT", required: ["s", "e", "text"], properties: { s: { type: "NUMBER" }, e: { type: "NUMBER" }, text: { type: "STRING" } } } } } },
+          maxOutputTokens: 8192,
+        },
+      },
+      55000,
+    );
+    const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+    const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+    try {
+      const out = JSON.parse(text) as { language: string; segments: Segment[] };
+      return { language: out.language ?? "", segments: (out.segments ?? []).filter((g) => g.text?.trim()).map((g) => ({ s: Math.round(g.s * 10) / 10, e: Math.round(g.e * 10) / 10, text: g.text.trim() })) };
+    } catch {
+      throw new EngineError("gemini", "busy", "Gemini returned unreadable JSON.");
+    }
+  }, 1);
 }
 
 async function transcribeWith(
