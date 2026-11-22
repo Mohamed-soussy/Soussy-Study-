@@ -15,6 +15,18 @@ const PROTECTED = [
  * browser-saved demo profile instead.
  */
 export async function middleware(request: NextRequest) {
+  // Always use the real address: the long one-off Vercel links ("soussy-study-abc123-….vercel.app")
+  // break the robot check and Google sign-in, which only allow soussy-study.vercel.app.
+  const canonical = process.env.NEXT_PUBLIC_SITE_HOST || "soussy-study.vercel.app";
+  const host = request.headers.get("host") ?? "";
+  if (process.env.VERCEL_ENV === "production" && host.endsWith(".vercel.app") && host !== canonical) {
+    const url = request.nextUrl.clone();
+    url.host = canonical;
+    url.protocol = "https:";
+    url.port = "";
+    return NextResponse.redirect(url, 308);
+  }
+
   if (!isSupabaseConfigured) return NextResponse.next();
 
   // Google / email sometimes return to the home page (e.g. "/?code=…") instead of /auth/callback.
