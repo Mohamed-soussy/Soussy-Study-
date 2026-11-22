@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
+import { Suspense } from "react";
 import { Logo, Wordmark } from "@/components/brand/logo";
 import { LocaleSwitch } from "@/components/locale-switch";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -24,7 +25,9 @@ export default async function SignInPage() {
           <h1 className="text-2xl font-bold text-text">{t("title")}</h1>
           <p className="mt-1 text-muted">{t("subtitle")}</p>
         </div>
-        <SignInForm configured={isSupabaseConfigured} />
+        <Suspense>
+          <SignInForm configured={isSupabaseConfigured} />
+        </Suspense>
       </main>
     </div>
   );

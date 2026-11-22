@@ -12,7 +12,7 @@ import {
   Pin,
   Plus,
   School,
-  ShieldCheck,
+
   ShieldOff,
   Users,
   X,
@@ -203,7 +203,8 @@ export function AccountStep({ draft, update, errorKey }: StepProps) {
           <Field
             label={t("guardianEmail")}
             htmlFor="guardian-email"
-            hint={age! < 13 ? t("guardianUnder13") : t("guardianUnder18")}
+            hint={t("guardianOptional")}
+            optional={c("optional")}
           >
             <Input
               id="guardian-email"
@@ -929,19 +930,8 @@ export function FinishStep({ draft }: StepProps) {
   const t = useTranslations("onboarding.finish");
   const name = draft.fullName?.trim().split(/\s+/)[0] ?? "";
   const hl = draft.enrollments.filter((e) => e.level === "HL").length;
-  const under13 = draft.dateOfBirth ? ageOn(draft.dateOfBirth) < 13 : false;
   const days = draft.nextExamDate ? daysUntil(draft.nextExamDate) : null;
 
-  if (under13) {
-    return (
-      <Card className="flex flex-col gap-3 p-6">
-        <ShieldCheck className="size-8 text-primary" aria-hidden />
-        <h1 className="text-2xl font-bold">{t("pendingTitle")}</h1>
-        <p className="text-muted">{t("pendingBody", { email: draft.guardianEmail ?? "" })}</p>
-        <p className="rounded-[10px] bg-warning/10 p-3 text-sm text-text">{t("pendingMissing")}</p>
-      </Card>
-    );
-  }
 
   return (
     <>

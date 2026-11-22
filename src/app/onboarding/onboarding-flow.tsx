@@ -54,11 +54,9 @@ function checkStep(step: number, p: Profile): string | null {
       if (!p.fullName?.trim()) return "account.nameRequired";
       if (!p.dateOfBirth) return "account.dobRequired";
       const age = ageOn(p.dateOfBirth);
-      if (Number.isNaN(age) || age < 5 || age > 100) return "account.dobInvalid";
-      if (age < 18) {
-        if (!p.guardianEmail?.trim()) return "account.guardianRequired";
-        if (!EMAIL_RE.test(p.guardianEmail.trim())) return "account.guardianInvalid";
-      }
+      if (Number.isNaN(age) || age < 3 || age > 100) return "account.dobInvalid";
+      // No age restriction. A parent email is optional, but must look right if given.
+      if (p.guardianEmail?.trim() && !EMAIL_RE.test(p.guardianEmail.trim())) return "account.guardianInvalid";
       return null;
     }
     case 2:
@@ -250,8 +248,6 @@ export function OnboardingFlow({ startStep }: { startStep?: number }) {
 function FinishAction({ draft, saving, onFinish }: { draft: Profile; saving: boolean; onFinish: () => void }) {
   const t = useTranslations("onboarding.finish");
   const c = useTranslations("common");
-  const under13 = draft.dateOfBirth ? ageOn(draft.dateOfBirth) < 13 : false;
-  if (under13) return null;
   return (
     <Button size="lg" onClick={onFinish} disabled={saving}>
       {saving ? c("saving") : t("go")}

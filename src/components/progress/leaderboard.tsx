@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useCurrentProfile } from "@/components/shell/profile-context";
 import { Card, Input, Select } from "@/components/ui/primitives";
 import { saveProfile } from "@/lib/profile/store";
-import { ageOn } from "@/lib/profile/types";
+
 import { listStudyDays } from "@/lib/progress/study";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -40,7 +40,7 @@ export function Leaderboards() {
   const [period, setPeriod] = useState<"week" | "all">("week");
   const [rows, setRows] = useState<Row[] | null>(null);
   const [saved, setSaved] = useState("");
-  const under13 = profile.dateOfBirth ? ageOn(profile.dateOfBirth) < 13 : false;
+  const under13 = false; // no age restriction
 
   const load = useCallback(async () => {
     if (!optIn) return setRows(null);

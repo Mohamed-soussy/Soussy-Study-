@@ -6,7 +6,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useContext, useEffect, useRef, useState } from "react";
 import { Logo, Wordmark } from "@/components/brand/logo";
-import { ageOn } from "@/lib/profile/types";
 import { signOut } from "@/lib/profile/store";
 import { useProfile } from "@/lib/profile/use-profile";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -49,7 +48,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const blocked = profile?.dateOfBirth ? ageOn(profile.dateOfBirth) < 13 : false;
+  // No age restriction: every student who finished onboarding gets in.
+  const blocked = false;
 
   useEffect(() => {
     if (status === "signed-out") router.replace("/sign-in");

@@ -2,7 +2,7 @@
 
 import { FlaskConical } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Turnstile, TURNSTILE_SITE_KEY, type TurnstileHandle } from "@/components/auth/turnstile";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,24 @@ export function SignInForm({ configured }: { configured: boolean }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const locale = useLocale();
+  const params = useSearchParams();
+  // An error passed back from Google / the email link (/auth/callback?error=…).
+  useEffect(() => {
+    const e = params.get("error");
+    if (e) setError(t("error", { message: e }));
+  }, [params, t]);
+
+  /** Plain-language versions of Supabase's sign-in errors. */
+  const friendly = (msg: string): string => {
+    if (/invalid login credentials/i.test(msg)) return t("errWrong");
+    if (/email not confirmed/i.test(msg)) return t("errNotConfirmed");
+    if (/already registered|already been registered|user already exists/i.test(msg)) return t("errExists");
+    if (/captcha/i.test(msg)) return t("errCaptcha");
+    if (/rate limit|too many/i.test(msg)) return t("errTooMany");
+    if (/password should|weak password|at least/i.test(msg)) return t("errWeak");
+    if (/fetch|network/i.test(msg)) return t("errNetwork");
+    return t("error", { message: msg });
+  };
   // Robot check (only when a Turnstile site key is set; Supabase checks the token).
   const [captcha, setCaptcha] = useState<string | null>(null);
   const turnstile = useRef<TurnstileHandle>(null);
@@ -95,9 +113,31 @@ export function SignInForm({ configured }: { configured: boolean }) {
       options: { redirectTo, scopes: provider === "azure" ? "email openid profile" : undefined },
     });
     if (error) {
-      setError(t("error", { message: error.message }));
+      setError(friendly(error.message));
       setBusy(false);
     }
+  }
+
+  async function forgot() {
+    setError(null);
+    setNotice(null);
+    if (!email) {
+      setError(t("forgotNeedEmail"));
+      return;
+    }
+    if (needCaptcha) {
+      setError(t("captchaWait"));
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+      captchaToken: captcha ?? undefined,
+    });
+    setBusy(false);
+    turnstile.current?.reset();
+    if (error) setError(friendly(error.message));
+    else setNotice(t("forgotSent"));
   }
 
   async function withEmail(mode: "in" | "up") {
@@ -116,7 +156,12 @@ export function SignInForm({ configured }: { configured: boolean }) {
     setBusy(false);
     turnstile.current?.reset(); // each token works once
     if (result.error) {
-      setError(t("error", { message: result.error.message }));
+      setError(friendly(result.error.message));
+      return;
+    }
+    // Supabase answers a sign-up for an email that already has an account with an empty identity list.
+    if (mode === "up" && result.data.user && result.data.user.identities?.length === 0) {
+      setError(t("errExists"));
       return;
     }
     if (mode === "up" && !result.data.session) {
@@ -198,6 +243,9 @@ export function SignInForm({ configured }: { configured: boolean }) {
             {t("signUpButton")}
           </Button>
         </div>
+        <button type="button" onClick={forgot} disabled={busy} className="self-center text-sm font-medium text-primary hover:underline">
+          {t("forgot")}
+        </button>
       </form>
     </div>
   );

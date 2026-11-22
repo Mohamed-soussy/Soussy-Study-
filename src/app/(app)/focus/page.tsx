@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, Chip, Field, Input, PageHeader } from "@/components/ui/primitives";
 import { createDetector, snapshot, type Detector } from "@/lib/focus/detector";
 import { initialRuleState, step, wasWrong, type FocusEvent, type RuleState, type Sensitivity, type Signals } from "@/lib/focus/rules";
-import { ageOn } from "@/lib/profile/types";
+
 import { breakLeftMs, currentUnit, elapsedMs, plannedMs, serverNow, session, syncServerTime, useSession } from "@/lib/session/store";
 import { cn } from "@/lib/utils";
 
@@ -49,7 +49,7 @@ export default function FocusPage() {
   const sig = useTranslations("focus.signals");
   const ci = useTranslations("focus.checkin");
   const profile = useCurrentProfile();
-  const under18 = profile.dateOfBirth ? ageOn(profile.dateOfBirth) < 18 : false;
+
 
   const [task, setTask] = useState("");
   const [minutes, setMinutes] = useState(25);
@@ -602,7 +602,6 @@ export default function FocusPage() {
             ) : cloudAsk ? (
               <div className="flex flex-col gap-2 rounded-[10px] border border-warning/50 bg-warning/10 p-3">
                 <p className="text-sm">{cam("cloudWarning")}</p>
-                {under18 && <p className="text-sm font-medium">{cam("under18")}</p>}
                 <div className="flex flex-wrap gap-2">
                   <Button
                     size="sm"

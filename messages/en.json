@@ -47,7 +47,17 @@
     "demoTitle": "Accounts aren't connected yet",
     "demoBody": "Real sign-in needs the Supabase anon key in the app's settings. Until then you can try everything in demo mode. It saves only in this browser.",
     "demoButton": "Try demo mode",
-    "captchaWait": "Wait a second while we check you're not a robot."
+    "captchaWait": "Wait a second while we check you're not a robot.",
+    "errWrong": "Wrong email or password. If you first joined with Google, use \"Continue with Google\". Forgot it? Tap \"Forgot password\".",
+    "errNotConfirmed": "Please confirm your email first: open the link we sent you, then sign in.",
+    "errExists": "This email already has an account. Tap \"Sign in\" instead (or \"Continue with Google\" if you joined with Google).",
+    "errCaptcha": "The robot check didn't finish. Wait for the ✓ above, then try again.",
+    "errTooMany": "Too many tries. Wait a minute and try again.",
+    "errWeak": "Use a stronger password: at least 8 characters.",
+    "errNetwork": "No connection. Check your internet and try again.",
+    "forgot": "Forgot password?",
+    "forgotNeedEmail": "Type your email above first.",
+    "forgotSent": "Check your inbox for a link to set a new password."
   },
   "legal": {
     "title": "Terms, privacy and community rules",
@@ -86,7 +96,8 @@
       "dobRequired": "Add your date of birth to continue.",
       "dobInvalid": "That date doesn't look right.",
       "guardianRequired": "Add a parent or guardian email to continue.",
-      "guardianInvalid": "That email doesn't look right."
+      "guardianInvalid": "That email doesn't look right.",
+      "guardianOptional": "Optional. A parent or guardian email, if you'd like them to get progress updates."
     },
     "school": {
       "title": "Where you study",
@@ -2188,5 +2199,18 @@
       "level3": "Teams Level 3",
       "mistral": "Mistral (free backup AI)"
     }
+  },
+  "resetPassword": {
+    "title": "Set a new password",
+    "label": "New password",
+    "save": "Save and continue",
+    "done": "Password saved."
+  },
+  "appError": {
+    "title": "Something went wrong",
+    "text": "This page hit a problem. Your work is saved. Try again, or sign out and back in.",
+    "retry": "Try again",
+    "signOut": "Sign out",
+    "details": "Details for the site owner"
   }
 }

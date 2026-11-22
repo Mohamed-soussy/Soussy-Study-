@@ -6,7 +6,7 @@ import { isSupabaseConfigured, SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/sup
 const PROTECTED = [
   "/home", "/calendar", "/hub", "/whiteboard", "/solver", "/vault", "/lessons",
   "/flashcards", "/focus", "/core", "/squads", "/more", "/settings", "/onboarding",
-  "/workspace", "/notes", "/remote", "/scan", "/link", "/moderate", "/system", "/progress", "/rooms", "/teach", "/exam",
+  "/workspace", "/notes", "/reset-password", "/remote", "/scan", "/link", "/moderate", "/system", "/progress", "/rooms", "/teach", "/exam",
 ];
 
 /**
@@ -16,6 +16,14 @@ const PROTECTED = [
  */
 export async function middleware(request: NextRequest) {
   if (!isSupabaseConfigured) return NextResponse.next();
+
+  // Google / email sometimes return to the home page (e.g. "/?code=…") instead of /auth/callback.
+  const sp = request.nextUrl.searchParams;
+  if (request.nextUrl.pathname !== "/auth/callback" && (sp.has("code") || sp.has("error_description"))) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/callback";
+    return NextResponse.redirect(url);
+  }
 
   let response = NextResponse.next({ request });
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
