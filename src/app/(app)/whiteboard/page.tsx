@@ -1,15 +1,17 @@
 "use client";
 
-import { Loader2, MessageCircleQuestion, PenTool, Sparkles } from "lucide-react";
+import { Loader2, Maximize2, MessageCircleQuestion, Minimize2, PenTool, Sparkles } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useCurrentProfile } from "@/components/shell/profile-context";
 import { Button } from "@/components/ui/button";
-import { Card, Chip, EmptyState, Input, PageHeader, Select } from "@/components/ui/primitives";
+import { Card, Chip, EmptyState, PageHeader, Select } from "@/components/ui/primitives";
 import { curriculumName, getPack } from "@/curriculum";
-import { lessonKey, type Lesson } from "@/lib/whiteboard/types";
+import { lessonKey, type Lesson, type LessonDetail } from "@/lib/whiteboard/types";
+import { cn } from "@/lib/utils";
+import { utterance } from "@/lib/voice";
 import type { PickedShape } from "@/components/whiteboard/player";
 import { TeacherPicker } from "@/components/teachers/teacher-picker";
 import { playsAudioHere } from "@/components/devices/device-sync";
@@ -45,13 +47,7 @@ function speak(text: string, lang: "en" | "ar", voice = { pitch: 1, rate: 1 }) {
   const synth = window.speechSynthesis;
   if (!synth) return;
   synth.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = lang === "ar" ? "ar-SA" : "en-US";
-  const v = synth.getVoices().find((x) => x.lang.toLowerCase().startsWith(lang));
-  if (v) u.voice = v;
-  u.pitch = voice.pitch;
-  u.rate = voice.rate;
-  synth.speak(u);
+  synth.speak(utterance(text, lang, voice));
 }
 
 /** AI Whiteboard (section 7): the signature feature. */
@@ -62,7 +58,20 @@ function WhiteboardPage() {
   const params = useSearchParams();
   const pack = getPack(profile.packId);
 
-  const [topic, setTopic] = useState(() => (params.get("topic") ?? "").slice(0, 200));
+  const [topic, setTopic] = useState(() => (params.get("topic") ?? "").slice(0, 2000));
+  const [detail, setDetail] = useState<LessonDetail>("detailed");
+  // Full screen: the board and the question box fill the whole screen (works on phones too).
+  const [full, setFull] = useState(false);
+  useEffect(() => {
+    if (!full) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setFull(false);
+    window.addEventListener("keydown", onKey);
+    document.documentElement.requestFullscreen?.().catch(() => {});
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    };
+  }, [full]);
   const [subject, setSubject] = useState("");
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [cached, setCached] = useState(false);
@@ -116,7 +125,7 @@ function WhiteboardPage() {
     const tp = topic.trim();
     if (tp.length < 2 || loading) return;
     const enrollment = profile.enrollments.find((x) => x.subjectId === subject);
-    const key = lessonKey(`${enrollment?.name ?? ""} ${tp}`, enrollment?.level ?? "", locale);
+    const key = lessonKey(`${enrollment?.name ?? ""} ${tp}`, `${enrollment?.level ?? ""}${detail === "quick" ? "" : `|${detail}`}`, locale);
     setError(null);
     setAnswer(null);
     setPicked(null);
@@ -138,6 +147,7 @@ function WhiteboardPage() {
           level: enrollment && enrollment.level !== "None" ? enrollment.level : undefined,
           curriculum: curriculumName(pack?.id),
           language: locale,
+          detail,
         }),
       });
       const data = (await res.json()) as { lesson?: Lesson; cached?: boolean; message?: string };
@@ -185,17 +195,26 @@ function WhiteboardPage() {
       <PageHeader title={t("title")} text={t("text")} />
 
       <form onSubmit={explain} className="flex flex-col gap-2">
+        <textarea
+          id="wb-topic"
+          value={topic}
+          onChange={(e) => setTopic(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) explain();
+          }}
+          placeholder={t("topicPlaceholderLong")}
+          aria-label={t("topic")}
+          rows={3}
+          dir="auto"
+          maxLength={2000}
+          className="w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-base focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
+        />
         <div className="flex flex-wrap gap-2">
-          <Input
-            id="wb-topic"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            placeholder={t("topicPlaceholder")}
-            aria-label={t("topic")}
-            className="h-12 min-w-0 flex-1 basis-64"
-            dir="auto"
-            maxLength={200}
-          />
+          <Select id="wb-detail" value={detail} onChange={(e) => setDetail(e.target.value as LessonDetail)} aria-label={t("detail")} className="h-12 w-auto basis-40">
+            <option value="quick">{t("detailQuick")}</option>
+            <option value="detailed">{t("detailDetailed")}</option>
+            <option value="full">{t("detailFull")}</option>
+          </Select>
           <Select id="wb-subject" value={subject} onChange={(e) => setSubject(e.target.value)} aria-label={t("subject")} className="h-12 w-auto basis-48">
             <option value="">{t("anySubject")}</option>
             {profile.enrollments.map((s) => (
@@ -209,7 +228,7 @@ function WhiteboardPage() {
             {loading ? t("making") : t("explain")}
           </Button>
         </div>
-        <p className="text-xs text-muted">{t("shared")}</p>
+        <p className="text-xs text-muted">{detail === "quick" ? t("shared") : t("detailNote")}</p>
       </form>
 
       {error && (
@@ -218,7 +237,7 @@ function WhiteboardPage() {
         </p>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className={cn("grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]", full && "fixed inset-0 z-50 overflow-y-auto bg-bg p-3 lg:grid-cols-[minmax(0,1fr)_340px]")}>
         <section className="flex min-w-0 flex-col gap-3">
           {lesson ? (
             <>
@@ -227,6 +246,10 @@ function WhiteboardPage() {
                   {lesson.title}
                 </h2>
                 {cached && <Chip>{t("cached")}</Chip>}
+                <Button variant="outline" size="sm" onClick={() => setFull((f) => !f)} aria-pressed={full}>
+                  {full ? <Minimize2 aria-hidden /> : <Maximize2 aria-hidden />}
+                  {full ? t("exitFull") : t("fullScreen")}
+                </Button>
                 <span className="ms-auto">
                   <TeacherPicker
                     prefs={prefs}
@@ -276,7 +299,7 @@ function WhiteboardPage() {
                 </Button>
               </form>
               {answer && (
-                <p className="rounded-[10px] bg-primary-soft p-3 text-sm leading-6" dir="auto" data-testid="answer">
+                <p className="whitespace-pre-line rounded-[10px] bg-primary-soft p-3 text-sm leading-6" dir="auto" data-testid="answer">
                   {answer}
                 </p>
               )}

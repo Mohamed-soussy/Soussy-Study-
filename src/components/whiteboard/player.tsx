@@ -8,6 +8,7 @@ import { Arrow, Circle, Layer, Line, Rect, Stage, Text } from "react-konva";
 import { Button } from "@/components/ui/button";
 import { BOARD_H, BOARD_W, words, type BoardAction, type BoardColor, type Lesson } from "@/lib/whiteboard/types";
 import { cn } from "@/lib/utils";
+import { bestVoice, saveVoice, voicesFor } from "@/lib/voice";
 
 /**
  * The AI whiteboard player (section 7). Speech comes from the browser's own
@@ -195,6 +196,19 @@ export function WhiteboardPlayer({
   const [rate, setRate] = useState(1);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [lasso, setLasso] = useState<number[] | null>(null);
+  // Natural device voices the student can choose from (remembered per language).
+  const vlang = lesson.language === "ar" ? "ar" : "en";
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [voiceName, setVoiceName] = useState("");
+  useEffect(() => {
+    const load = () => {
+      setVoices(voicesFor(vlang));
+      setVoiceName(bestVoice(vlang)?.name ?? "");
+    };
+    load();
+    window.speechSynthesis?.addEventListener?.("voiceschanged", load);
+    return () => window.speechSynthesis?.removeEventListener?.("voiceschanged", load);
+  }, [vlang]);
   const timers = useRef<number[]>([]);
   const playingRef = useRef(false);
   const segRef = useRef(0);
@@ -278,9 +292,9 @@ export function WhiteboardPlayer({
       const u = new SpeechSynthesisUtterance(say);
       const lang = lesson.language === "ar" ? "ar" : "en";
       u.lang = lang === "ar" ? "ar-SA" : "en-US";
-      const deviceVoice = synth.getVoices().find((v) => v.lang.toLowerCase().startsWith(lang));
+      const deviceVoice = bestVoice(lang);
       if (deviceVoice) u.voice = deviceVoice;
-      u.rate = rate * (voice?.rate ?? 1);
+      u.rate = 0.95 * rate * (voice?.rate ?? 1);
       u.pitch = voice?.pitch ?? 1;
       let gotBoundary = false;
       u.onboundary = (e) => {
@@ -333,15 +347,34 @@ export function WhiteboardPlayer({
 
   useEffect(() => () => stop(), [stop]);
 
+  // Long lessons have several boards: show only the board the current step is on.
+  const boardStart = useMemo(() => {
+    let start = 0;
+    for (let i = 0; i <= seg && i < lesson.segments.length; i++) if (lesson.segments[i].newBoard) start = i;
+    return start;
+  }, [lesson, seg]);
+  const boardEnd = useMemo(() => {
+    let end = lesson.segments.length;
+    for (let i = boardStart + 1; i < lesson.segments.length; i++)
+      if (lesson.segments[i].newBoard) {
+        end = i;
+        break;
+      }
+    return end;
+  }, [lesson, boardStart]);
+  const boards = useMemo(() => 1 + lesson.segments.filter((s, i) => i > 0 && s.newBoard).length, [lesson]);
+  const boardNo = useMemo(() => 1 + lesson.segments.slice(1, boardStart + 1).filter((s) => s.newBoard).length, [lesson, boardStart]);
+
   const visible = useMemo(() => {
     const out: { key: string; a: BoardAction }[] = [];
-    lesson.segments.forEach((s, si) =>
+    lesson.segments.forEach((s, si) => {
+      if (si < boardStart || si >= boardEnd) return;
       s.actions.forEach((a, ai) => {
         if (a.word <= reached[si]) out.push({ key: `${si}-${ai}`, a });
-      }),
-    );
+      });
+    });
     return out;
-  }, [lesson, reached]);
+  }, [lesson, reached, boardStart, boardEnd]);
 
   function pick(key: string, a: BoardAction) {
     if (playingRef.current) pause();
@@ -496,7 +529,25 @@ export function WhiteboardPlayer({
             />
           ))}
         </div>
-        <div className="ms-auto flex items-center gap-1">
+        {boards > 1 && <span className="text-xs font-medium text-muted">{t("board", { n: boardNo, total: boards })}</span>}
+        <div className="ms-auto flex flex-wrap items-center gap-1">
+          {voices.length > 1 && (
+            <select
+              aria-label={t("voice")}
+              value={voiceName}
+              onChange={(e) => {
+                saveVoice(vlang, e.target.value);
+                setVoiceName(e.target.value);
+              }}
+              className="h-9 max-w-40 rounded-[8px] border border-border bg-surface px-2 text-sm"
+            >
+              {voices.map((v) => (
+                <option key={v.name} value={v.name}>
+                  {v.name.replace(/^(Microsoft|Google)\s+/, "").replace(/\s*\(.*\)$/, "").replace(/ Online$/, "")}
+                </option>
+              ))}
+            </select>
+          )}
           <Button variant="ghost" size="icon" onClick={() => setMuted((m) => !m)} aria-label={muted ? t("unmute") : t("mute")} aria-pressed={muted}>
             {muted ? <VolumeX /> : <Volume2 />}
           </Button>

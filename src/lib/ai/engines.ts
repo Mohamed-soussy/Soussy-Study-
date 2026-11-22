@@ -52,6 +52,8 @@ export const ROUTES = {
     // Fastest first: Flash-Lite starts speaking in ~1.5 s; the bigger models think for 30+ s.
     models: ["gemini-3.1-flash-lite", "gemini-3-flash-preview", "gemini-3.5-flash"],
   },
+  /** Detailed / full lessons: the stronger Flash models follow long instructions far better. */
+  whiteboardLong: { engine: "gemini", data: "public", models: ["gemini-3-flash-preview", "gemini-3.5-flash", "gemini-3.1-flash-lite"] },
   /** Focus snapshot check: only when the student switched on cloud checks (opt-in). */
   focusSnapshot: { engine: "gemini", data: "opt-in-image", models: ["gemini-3.1-flash-lite"] },
   /** Embeddings for "search by meaning" (open-source, multilingual, 1024 dimensions). */

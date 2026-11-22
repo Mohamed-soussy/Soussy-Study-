@@ -34,6 +34,7 @@ import { TeacherPicker } from "@/components/teachers/teacher-picker";
 import type { Chat, ChatMessage, Citation, VaultFile } from "@/lib/data/types";
 import { CARD_GROUPS, INTENT_CARDS, type FieldKey, type IntentCard } from "@/lib/hub/intent-cards";
 import { cn } from "@/lib/utils";
+import { utterance } from "@/lib/voice";
 import { Markdown } from "./markdown";
 
 interface Source {
@@ -67,10 +68,7 @@ function speak(text: string, locale: string, onEnd: () => void, voice = { pitch:
     .replace(/\$\$?[^$]*\$\$?/g, " ")
     .replace(/\[\d+\]/g, "")
     .replace(/[#*_`>|]/g, "");
-  const u = new SpeechSynthesisUtterance(plain);
-  u.lang = /[؀-ۿ]/.test(plain) || locale === "ar" ? "ar-SA" : "en-US";
-  u.pitch = voice.pitch;
-  u.rate = voice.rate;
+  const u = utterance(plain, /[؀-ۿ]/.test(plain) || locale === "ar" ? "ar" : "en", voice);
   u.onend = onEnd;
   u.onerror = onEnd;
   speechSynthesis.cancel();

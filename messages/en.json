@@ -809,7 +809,17 @@
     "nothingPicked": "Nothing picked yet. Your question will be about the whole step.",
     "error": "Couldn't make the lesson: {message}",
     "voiceNote": "The voice comes from your device, free. On some devices Arabic voices need to be installed in system settings.",
-    "empty": "Pick a topic and watch it come to life."
+    "empty": "Pick a topic and watch it come to life.",
+    "topicPlaceholderLong": "What should I explain? Be as specific as you like, e.g. \"Integration by parts: the formula, what u and dv mean, how to choose them, and 2 exam examples\"",
+    "detail": "Lesson length",
+    "detailQuick": "Quick (2 min)",
+    "detailDetailed": "Detailed (5–8 min)",
+    "detailFull": "Full lesson (10+ min)",
+    "detailNote": "Detailed lessons take up to a minute to prepare, then they're saved for everyone.",
+    "fullScreen": "Full screen",
+    "exitFull": "Exit full screen",
+    "board": "Board {n} of {total}",
+    "voice": "Voice"
   },
   "focus": {
     "title": "Focus room",

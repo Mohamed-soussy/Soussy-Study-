@@ -22,8 +22,23 @@ The narration
 - Match the level: HL or AP goes deeper than SL or Standard. Be accurate; if a topic is ambiguous, pick the most common high school meaning.
 - Write "say" and all board text in the requested language. For Arabic, use clear Modern Standard Arabic.`;
 
-export function whiteboardPrompt(args: { topic: string; subject?: string; level?: string; curriculum?: string; language: "en" | "ar" }) {
-  return `Topic: ${args.topic}
+/** How much to cover, by the length the student picked. */
+const DETAIL = {
+  quick: "Length: QUICK. Follow the rules above (5 to 9 segments, one board).",
+  detailed: `Length: DETAILED. This overrides the segment counts above.
+- 12 to 18 segments, 30 to 55 actions, each segment 2 to 3 spoken sentences (under 60 words).
+- Split the lesson into 2 to 4 boards. Start each new board with "newBoard": true on its first segment and write that part's heading at the top of the fresh board; the board is empty again, so reuse the whole space.
+- Cover every idea the student asked about, define every symbol and term, show at least one fully worked example with every step, and point out a common mistake.`,
+  full: `Length: FULL LESSON. This overrides the segment counts above.
+- 20 to 32 segments, 50 to 90 actions, each segment 2 to 3 spoken sentences (under 60 words).
+- One board per main idea (3 to 6 boards). Start each new board with "newBoard": true on its first segment and write that idea's heading at the top; the board is empty again, so reuse the whole space.
+- Go deep like a real class: definitions, why it works, every formula with what each symbol means and its units, a diagram per idea, two worked examples (one exam-style), common mistakes, and a final summary board that links all the ideas.`,
+} as const;
+
+export function whiteboardPrompt(args: { topic: string; subject?: string; level?: string; curriculum?: string; language: "en" | "ar"; detail?: keyof typeof DETAIL }) {
+  return `${DETAIL[args.detail ?? "quick"]}
+What the student wants explained (follow it closely, including every sub-point they list):
+${args.topic}
 Subject: ${args.subject || "not given"}
 Curriculum and level: ${[args.curriculum, args.level].filter(Boolean).join(", ") || "high school"}
 Language: ${args.language === "ar" ? "Arabic" : "English"}
@@ -44,6 +59,7 @@ export const WHITEBOARD_SCHEMA = {
         required: ["say", "actions"],
         properties: {
           say: { type: "STRING" },
+          newBoard: { type: "BOOLEAN" },
           actions: {
             type: "ARRAY",
             items: {
@@ -75,7 +91,7 @@ export const WHITEBOARD_SCHEMA = {
 } as const;
 
 /** Answering "what's this?" about a shape the student circled (section 7.2). Runs on Groq. */
-export const WHITEBOARD_ASK_SYSTEM = `You are the teacher at the whiteboard in Soussy Study. The student paused your lesson, circled part of the drawing and asked a question about it. Answer in 2–4 short spoken sentences about that exact part, in the student's language. Plain text only (it will be read aloud), Unicode math, no Markdown, no LaTeX. If the question is unrelated to studying, gently steer back.`;
+export const WHITEBOARD_ASK_SYSTEM = `You are the teacher at the whiteboard in Soussy Study. The student paused your lesson, circled part of the drawing and asked a question about it. Answer about that exact part (or the whole current step if nothing is circled), in the student's language. If they ask to "explain more", "in detail" or ask several things, give a full step-by-step explanation (up to about 12 sentences) covering every point and what each symbol or term means; otherwise 2–5 sentences. Plain text only (it will be read aloud), Unicode math, no Markdown, no LaTeX. If the question is unrelated to studying, gently steer back.`;
 
 const n = { type: ["number", "null"] } as const;
 
@@ -91,9 +107,10 @@ export const WHITEBOARD_SCHEMA_STRICT = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["say", "actions"],
+        required: ["say", "actions", "newBoard"],
         properties: {
           say: { type: "string" },
+          newBoard: { type: "boolean" },
           actions: {
             type: "array",
             items: {

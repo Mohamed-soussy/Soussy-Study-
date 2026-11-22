@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     language: "en" | "ar";
     teacher?: string;
   };
-  const question = (b.question ?? "").slice(0, 500).trim();
+  const question = (b.question ?? "").slice(0, 2000).trim();
   if (!question) return NextResponse.json({ error: "no_question" }, { status: 400 });
   const shape = b.shape
     ? `The student circled: a ${b.shape.kind}${b.shape.label ? ` labelled "${b.shape.label}"` : ""}${b.shape.text ? ` showing "${b.shape.text}"` : ""}.`
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
           content: `Lesson: ${b.title}\nWhat you were saying: ${b.segment}\n${shape}\nReply in ${b.language === "ar" ? "Arabic" : "English"}.\nQuestion: ${question}`,
         },
       ],
-      600,
+      1500,
     );
     return NextResponse.json({ answer });
   } catch (err) {

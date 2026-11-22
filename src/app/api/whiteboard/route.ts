@@ -6,7 +6,7 @@ import { lessonKey, sanitizeLesson, type Lesson } from "@/lib/whiteboard/types";
 import { solutionWhiteboardPrompt, WHITEBOARD_SCHEMA, WHITEBOARD_SCHEMA_STRICT, WHITEBOARD_SYSTEM, whiteboardPrompt } from "@/prompts/whiteboard.v1";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 /**
  * POST /api/whiteboard — a whiteboard lesson on a syllabus topic (section 7).
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   const signedOut = await requireUser();
   if (signedOut) return signedOut;
 
-  const body = (await req.json()) as { topic?: string; subject?: string; level?: string; curriculum?: string; language?: string; problem?: string; solution?: unknown };
+  const body = (await req.json()) as { topic?: string; subject?: string; level?: string; curriculum?: string; language?: string; detail?: string; problem?: string; solution?: unknown };
 
   // A student's own solved problem (from the solver) is personal: Groq, and never cached for others.
   if (body.solution && body.problem) {
@@ -44,10 +44,11 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const topic = (body.topic ?? "").trim().slice(0, 200);
+  const topic = (body.topic ?? "").trim().slice(0, 2000);
+  const detail = body.detail === "full" || body.detail === "detailed" ? body.detail : "quick";
   if (topic.length < 2) return NextResponse.json({ error: "no_topic" }, { status: 400 });
   const language = body.language === "ar" ? "ar" : "en";
-  const key = lessonKey(`${body.subject ?? ""} ${topic}`, body.level ?? "", language);
+  const key = lessonKey(`${body.subject ?? ""} ${topic}`, `${body.level ?? ""}${detail === "quick" ? "" : `|${detail}`}`, language);
 
   const cached = await getSharedLesson(key);
   if (cached) return NextResponse.json({ lesson: cached, cached: true });
@@ -58,13 +59,13 @@ export async function POST(req: NextRequest) {
   if (blocked) return blocked;
 
   try {
-    const raw = await geminiJSON<unknown>(ROUTES.whiteboardLesson, {
+    const raw = await geminiJSON<unknown>(detail === "quick" ? ROUTES.whiteboardLesson : ROUTES.whiteboardLong, {
       system: WHITEBOARD_SYSTEM,
-      prompt: whiteboardPrompt({ topic, subject: body.subject, level: body.level, curriculum: body.curriculum, language }),
+      prompt: whiteboardPrompt({ topic, subject: body.subject, level: body.level, curriculum: body.curriculum, language, detail }),
       schema: WHITEBOARD_SCHEMA,
-      maxOutputTokens: 8192,
+      maxOutputTokens: detail === "full" ? 32000 : detail === "detailed" ? 20000 : 8192,
       minimalThinking: true,
-      timeoutMs: 60000,
+      timeoutMs: detail === "quick" ? 60000 : 110000,
     });
     const lesson: Lesson = sanitizeLesson(raw, language);
     if (!lesson.segments.length) return NextResponse.json({ error: "empty", message: "The AI returned an empty lesson. Try again." }, { status: 502 });

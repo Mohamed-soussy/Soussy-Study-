@@ -44,7 +44,12 @@ export interface BoardAction {
 export interface BoardSegment {
   say: string;
   actions: BoardAction[];
+  /** Starts a fresh board ("new page") before drawing: long lessons get one board per main idea. */
+  newBoard?: boolean;
 }
+
+/** How long and deep the lesson is. */
+export type LessonDetail = "quick" | "detailed" | "full";
 
 export interface Lesson {
   title: string;
@@ -60,11 +65,11 @@ const clamp = (v: unknown, lo: number, hi: number, d: number) => {
 /** Cleans whatever the model returned so the player can trust it. */
 export function sanitizeLesson(raw: unknown, language: "en" | "ar"): Lesson {
   const r = (raw ?? {}) as { title?: unknown; segments?: unknown };
-  const segments = (Array.isArray(r.segments) ? r.segments : []).slice(0, 14).map((s) => {
-    const seg = (s ?? {}) as { say?: unknown; actions?: unknown };
-    const say = String(seg.say ?? "").slice(0, 400).trim();
+  const segments = (Array.isArray(r.segments) ? r.segments : []).slice(0, 40).map((s, si) => {
+    const seg = (s ?? {}) as { say?: unknown; actions?: unknown; newBoard?: unknown };
+    const say = String(seg.say ?? "").slice(0, 700).trim();
     const words = say.split(/\s+/).filter(Boolean).length;
-    const actions = (Array.isArray(seg.actions) ? seg.actions : []).slice(0, 10).flatMap((a): BoardAction[] => {
+    const actions = (Array.isArray(seg.actions) ? seg.actions : []).slice(0, 12).flatMap((a): BoardAction[] => {
       const x = (a ?? {}) as Record<string, unknown>;
       const kind = ACTION_KINDS.includes(x.kind as ActionKind) ? (x.kind as ActionKind) : null;
       if (!kind) return [];
@@ -91,7 +96,7 @@ export function sanitizeLesson(raw: unknown, language: "en" | "ar"): Lesson {
         },
       ];
     });
-    return { say, actions };
+    return { say, actions, newBoard: si > 0 && seg.newBoard === true };
   });
   return {
     title: String(r.title ?? "").slice(0, 120) || "Lesson",
