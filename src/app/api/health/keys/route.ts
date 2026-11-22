@@ -26,6 +26,8 @@ export async function GET(req: Request) {
     mistral: has("MISTRAL_API_KEY"),
     tavily: has("TAVILY_API_KEY"),
     turnstileSiteKey: has("NEXT_PUBLIC_TURNSTILE_SITE_KEY"),
+    geminiEmergencySwitch: /^(1|true|yes|on)$/i.test(process.env.ALLOW_GEMINI_FALLBACK?.trim() ?? ""),
+    sapling: has("SAPLING_API_KEY"),
     commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
   };
   if (live) {
