@@ -447,6 +447,21 @@ export default function SolverPage() {
                   <p dir="auto">{sol.idea}</p>
                 </section>
 
+                {sol.formulas && sol.formulas.length > 0 && (
+                  <section>
+                    <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">{t("formulas")}</h3>
+                    <ul className="flex flex-col gap-2">
+                      {sol.formulas.map((f, i) => (
+                        <li key={i} className="rounded-[10px] border border-border bg-surface-2/60 p-3">
+                          <p className="text-sm font-semibold" dir="auto">{f.name}</p>
+                          <Tex math={f.latex} block />
+                          <p className="text-sm text-muted" dir="auto">{f.meaning}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+
                 <section>
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                     <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">{t("steps")}</h3>

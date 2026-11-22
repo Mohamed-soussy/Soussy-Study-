@@ -25,7 +25,7 @@ export const EXAM_SCHEMA = {
         required: ["n", "type", "unit", "prompt", "options", "answer", "marks", "markscheme"],
         properties: {
           n: { type: "integer" },
-          type: { type: "string", enum: ["mcq", "short", "long"] },
+          type: { type: "string", enum: ["mcq", "truefalse", "fill", "short", "long", "essay"] },
           unit: { type: "string" },
           prompt: { type: "string" },
           options: { type: "array", items: { type: "string" } },
@@ -40,7 +40,7 @@ export const EXAM_SCHEMA = {
 
 export interface ExamQuestion {
   n: number;
-  type: "mcq" | "short" | "long";
+  type: "mcq" | "truefalse" | "fill" | "short" | "long" | "essay";
   unit: string;
   prompt: string;
   options: string[];
@@ -54,12 +54,42 @@ export interface Exam {
   questions: ExamQuestion[];
 }
 
-export function examPrompt(a: { course: string; curriculum: string; units: string[]; style: string; minutes: number; calculator: boolean }) {
-  const mcq = /paper 1|mcq|multiple/i.test(a.style);
+export const QUESTION_TYPES = ["mcq", "truefalse", "fill", "short", "long", "essay"] as const;
+export type QuestionType = (typeof QUESTION_TYPES)[number];
+
+const TYPE_RULES: Record<QuestionType, string> = {
+  mcq: `"mcq": 4 options, "answer" = index 0–3 of the correct option, 1 mark.`,
+  truefalse: `"truefalse": a statement to judge; options ["True", "False"], "answer" 0 for True or 1 for False, 1 mark.`,
+  fill: `"fill": a sentence with ____ for the missing word(s); options [], answer -1, 1–2 marks; markscheme = the accepted answer(s).`,
+  short: `"short": 1–4 marks, with an official command term (state, define, outline, describe, calculate, explain); options [], answer -1.`,
+  long: `"long": 5–9 marks, multi-part where natural (a), (b), (c); command terms like explain, analyse, compare, evaluate, discuss; options [], answer -1.`,
+  essay: `"essay": an extended-response or guided-analysis task worth the official marks for that paper (e.g. IB English A Paper 1 = 20 marks with criteria A–D); markscheme = the official-style assessment criteria and what a top answer includes; options [], answer -1.`,
+};
+
+export function examPrompt(a: {
+  course: string;
+  curriculum: string;
+  units: string[];
+  topic?: string;
+  style: string;
+  minutes: number;
+  calculator: boolean;
+  difficulty?: "easy" | "medium" | "hard";
+  types?: QuestionType[];
+  research?: string;
+}) {
+  const types = a.types?.length ? a.types : /paper 1|mcq|multiple/i.test(a.style) ? (["mcq"] as QuestionType[]) : (["short", "long"] as QuestionType[]);
+  const diff = a.difficulty ?? "medium";
   return `Write an ORIGINAL timed mock exam for ${a.course} (${a.curriculum}) in the style of ${a.style}, for ${a.minutes} minutes, ${a.calculator ? "calculator allowed" : "NO calculator"}.
-Units: ${a.units.join("; ")}.
-- ${mcq ? `About ${Math.min(30, Math.round(a.minutes * 0.9))} multiple-choice questions (type "mcq", 4 options, "answer" = index 0–3 of the correct option, 1 mark each).` : `Structured questions (type "short" for 1–4 marks, "long" for 5–9 marks) totalling about ${a.minutes} marks, with command terms (state, describe, explain, calculate, evaluate). For these, options is [] and answer is -1.`}
-- Every question names its unit (copied from the list), in "unit".
+${a.units.length ? `Units: ${a.units.join("; ")}.` : ""}
+${a.topic ? `Exactly what to test (follow closely: texts, chapters, pages, sub-topics): ${a.topic}` : ""}
+Difficulty: ${diff.toUpperCase()} (${diff === "easy" ? "recall and simple application; below exam level, to build confidence" : diff === "hard" ? "hardest real-exam level: multi-step, unfamiliar contexts, top-band discrimination" : "typical real-exam level"}).
+Question types to use (only these; mix them sensibly): ${types.join(", ")}.
+${types.map((t) => `- ${TYPE_RULES[t]}`).join("\n")}
+- Total marks should fit ${a.minutes} minutes the way the real exam does (about 1 mark per minute for science/maths papers; essays follow the official time).
+- Match the REAL exam for this curriculum and subject: its paper structure, command terms, mark allocation and markscheme style. Use the research notes below for that format; never copy their questions.
+- Every question names its unit or topic in "unit".
+${a.research ? `\nResearch notes on the real exam format (from the web):\n${a.research}\n` : ""}
 - "markscheme": for mcq, one line on why the answer is right; otherwise the mark points in the official markscheme style ("M1 …", "A1 …", "1 mark for …"), one per line.
 - Never copy real past-paper questions; write new ones of the same difficulty.
 - Plain text with Unicode math (×, ², √, Δ); no LaTeX.

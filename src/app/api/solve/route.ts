@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       { role: "system", content: SOLVER_SYSTEM },
       { role: "user", content: solverPrompt({ problem, subject: b.subject, level: b.level, curriculum: b.curriculum, language }) },
     ];
-    let solution = await groqJSON<Solution>(ROUTES.solve, { messages, schema: SOLUTION_SCHEMA, name: "solution", maxTokens: 3000, effort: "medium" });
+    let solution = await groqJSON<Solution>(ROUTES.solve, { messages, schema: SOLUTION_SCHEMA, name: "solution", maxTokens: 4500, effort: "medium" });
     let result = verify(solution.verify);
     let attempts = 1;
 
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
         ],
         schema: SOLUTION_SCHEMA,
         name: "solution",
-        maxTokens: 3000,
+        maxTokens: 4500,
         effort: "medium",
       });
       const second = verify(retry.verify);

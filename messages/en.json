@@ -958,7 +958,8 @@
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
     "error": "Couldn't solve it: {message}",
-    "attempts": "Re-solved after the first answer failed the check."
+    "attempts": "Re-solved after the first answer failed the check.",
+    "formulas": "Formulas used"
   },
   "flashcards": {
     "title": "Flashcards",
@@ -1729,7 +1730,7 @@
       "units": "Units",
       "customUnits": "Other units or topics, separated by commas",
       "calculator": "Calculator allowed",
-      "pickUnits": "Pick at least one unit.",
+      "pickUnits": "Pick a unit or type what to test.",
       "failed": "Couldn't write the exam right now. Try again in a minute.",
       "start": "Start the exam",
       "writing": "Writing your exam…",
@@ -1744,7 +1745,24 @@
       "awarded": "{got} of {of} marks",
       "markscheme": "Markscheme:",
       "another": "Try another",
-      "estimate": "Marks are an estimate from the AI against a generated markscheme, not an official grade."
+      "estimate": "Marks are an estimate from the AI against a generated markscheme, not an official grade.",
+      "pickTypes": "Pick at least one question type.",
+      "difficulty": "Difficulty",
+      "easy": "Easy",
+      "medium": "Medium (real exam)",
+      "hard": "Hard",
+      "types": "Question types",
+      "type": {
+        "mcq": "Multiple choice",
+        "truefalse": "True / False",
+        "fill": "Fill the blank",
+        "short": "Short answer",
+        "long": "Long answer",
+        "essay": "Essay / analysis"
+      },
+      "topic": "What exactly should it test?",
+      "topicPlaceholder": "e.g. The Bear by Andrew Krivak, pages 97–108: descriptive language, characterization, structure",
+      "basedOn": "Exam format checked against {count} real sources"
     },
     "teach": {
       "intro": "Explain a topic to Sam, a classmate who missed the lesson. Sam asks questions until the gaps show. Type \"done\" (or tap Finish) for a short report.",

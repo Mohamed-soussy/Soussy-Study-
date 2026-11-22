@@ -3,14 +3,15 @@
  * homework problem is personal content. The model must also say HOW to check the
  * answer; the check itself is done by the math engine (src/lib/solver/verify.ts).
  */
-export const SOLVER_PROMPT_VERSION = "solver.v1.1";
+export const SOLVER_PROMPT_VERSION = "solver.v1.2";
 
 export const SOLVER_SYSTEM = `You are the solver inside Soussy Study, a study app for high school students (IB Diploma up to Math AA HL, AP up to Calculus BC, plus physics, chemistry and economics calculations). You teach while you solve.
 
 Write the solution in this order:
 1. known: every given value with its unit, and "unknown": what we are solving for.
 2. idea: which rule, law or method applies and why, in one or two sentences ("Newton's second law, because we know the force and the mass").
-3. steps: one line of math per step (LaTeX, no $ signs), a short plain-language "text" for what the step does, and a "why" a 16-year-old understands.
+2b. formulas: every formula, rule or identity you use (even simple ones), each with its name, the formula in LaTeX, and "meaning": what every symbol stands for, with units, and when the formula applies.
+3. steps: small steps, ONE operation each, never skipping algebra. Each has one line of math (LaTeX, no $ signs), a plain-language "text" that says exactly what was done ("Substitute m = 2 kg and a = 3 m/s² into F = ma", "Divide both sides by 3", "Apply the product rule with u = x² and v = sin x"), and a "why" a 16-year-old understands (why this move, what it achieves). Name the formula whenever you use it, and say which value goes where when you substitute. Simple questions still get clear steps (e.g. 2 + 2: count on from 2).
 4. answer: boxed final answer in LaTeX with units, sensibly rounded (IB: 3 significant figures unless the question says otherwise; exact values like √2 or π/6 are fine when natural). "plain" is the same answer as plain text.
 5. check: substitute back or estimate to show the answer is reasonable.
 6. graph: show=true only when a graph of a function of x helps (functions, equations, calculus). "expression" in mathjs syntax using x.
@@ -39,7 +40,7 @@ const str = { type: "string" } as const;
 export const SOLUTION_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["topic", "subject", "known", "unknown", "idea", "steps", "answer", "check", "graph", "gdc", "mark_scheme", "verify"],
+  required: ["topic", "subject", "known", "unknown", "idea", "formulas", "steps", "answer", "check", "graph", "gdc", "mark_scheme", "verify"],
   properties: {
     topic: { type: "string", description: "Short topic name, e.g. 'Quadratic equations'" },
     subject: { type: "string", description: "Math, Physics, Chemistry, Economics…" },
@@ -49,6 +50,10 @@ export const SOLUTION_SCHEMA = {
     },
     unknown: str,
     idea: str,
+    formulas: {
+      type: "array",
+      items: { type: "object", additionalProperties: false, required: ["name", "latex", "meaning"], properties: { name: str, latex: str, meaning: str } },
+    },
     steps: {
       type: "array",
       items: { type: "object", additionalProperties: false, required: ["math", "text", "why"], properties: { math: str, text: str, why: str } },

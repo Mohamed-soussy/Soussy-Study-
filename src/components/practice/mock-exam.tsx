@@ -48,6 +48,11 @@ export function MockExam() {
   const [style, setStyle] = useState(styles[0]);
   const [minutes, setMinutes] = useState(30);
   const [calculator, setCalculator] = useState(true);
+  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
+  const [types, setTypes] = useState<string[]>(() => (/mcq|multiple|paper 1 \(multiple/i.test(styles[0]) ? ["mcq"] : ["short", "long"]));
+  const [topic, setTopic] = useState(params.get("topic") ?? "");
+  const [sources, setSources] = useState<{ title: string; url: string }[]>([]);
+  const auto = (type: string) => type === "mcq" || type === "truefalse";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [exam, setExam] = useState<Exam | null>(null);
@@ -71,18 +76,20 @@ export function MockExam() {
 
   const start = async () => {
     const list = [...picked, ...custom.split(",").map((s) => s.trim())].filter(Boolean);
-    if (!enrollment || !list.length) return setError(t("pickUnits"));
+    if (!enrollment || !(list.length || topic.trim())) return setError(t("pickUnits"));
+    if (!types.length) return setError(t("pickTypes"));
     setBusy(true);
     setError("");
     try {
       const res = await fetch("/api/coach/exam", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ course: `${enrollment.name} ${enrollment.level !== "None" ? enrollment.level : ""}`.trim(), curriculum: curriculumName(pack?.id) ?? "", units: list, style, minutes, calculator }),
+        body: JSON.stringify({ course: `${enrollment.name} ${enrollment.level !== "None" ? enrollment.level : ""}`.trim(), curriculum: curriculumName(pack?.id) ?? "", units: list, topic, style, minutes, calculator, difficulty, types }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message ?? t("failed"));
       setExam(json.exam);
+      setSources(json.sources ?? []);
       setAnswers({});
       setMarked(null);
       submitted.current = false;
@@ -100,9 +107,9 @@ export function MockExam() {
     submitted.current = true;
     setMarking(true);
     const results: Result[] = exam.questions
-      .filter((q) => q.type === "mcq")
+      .filter((q) => auto(q.type))
       .map((q) => ({ n: q.n, awarded: Number(answers[q.n]) === q.answer && answers[q.n] !== undefined ? 1 : 0, feedback: q.markscheme }));
-    const written = exam.questions.filter((q) => q.type !== "mcq");
+    const written = exam.questions.filter((q) => !auto(q.type));
     if (written.length) {
       try {
         const res = await fetch("/api/coach/mark", {
@@ -167,6 +174,18 @@ export function MockExam() {
         <p className="text-sm text-muted" dir="auto">
           {exam.instructions}
         </p>
+        {sources.length > 0 && (
+          <details className="rounded-[10px] bg-surface-2 p-3 text-sm">
+            <summary className="cursor-pointer font-medium">{t("basedOn", { count: sources.length })}</summary>
+            <ul className="mt-2 flex flex-col gap-1">
+              {sources.map((x) => (
+                <li key={x.url}>
+                  <a href={x.url} target="_blank" rel="noreferrer" className="text-primary hover:underline" dir="auto">{x.title || x.url}</a>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
         <ol className="flex flex-col gap-4">
           {exam.questions.map((q) => {
             const r = marked?.find((x) => x.n === q.n);
@@ -180,7 +199,7 @@ export function MockExam() {
                     </p>
                     <span className="shrink-0 text-sm text-muted">[{q.marks}]</span>
                   </div>
-                  {q.type === "mcq" ? (
+                  {auto(q.type) ? (
                     <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label={t("question", { n: q.n })}>
                       {q.options.map((o, i) => {
                         const chosen = answers[q.n] === String(i);
@@ -200,18 +219,27 @@ export function MockExam() {
                               marked && chosen && i !== q.answer && "border-danger bg-danger/10",
                             )}
                           >
-                            <span className="me-2 font-semibold">{String.fromCharCode(65 + i)}</span>
+                            {q.type === "mcq" && <span className="me-2 font-semibold">{String.fromCharCode(65 + i)}</span>}
                             {o}
                           </button>
                         );
                       })}
                     </div>
+                  ) : q.type === "fill" ? (
+                    <input
+                      value={answers[q.n] ?? ""}
+                      onChange={(e) => setAnswers((a) => ({ ...a, [q.n]: e.target.value }))}
+                      disabled={Boolean(marked)}
+                      dir="auto"
+                      aria-label={t("answer", { n: q.n })}
+                      className="h-10 w-full rounded-[10px] border border-border bg-surface px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    />
                   ) : (
                     <textarea
                       value={answers[q.n] ?? ""}
                       onChange={(e) => setAnswers((a) => ({ ...a, [q.n]: e.target.value }))}
                       disabled={Boolean(marked)}
-                      rows={q.type === "long" ? 8 : 4}
+                      rows={q.type === "essay" ? 16 : q.type === "long" ? 8 : 4}
                       dir="auto"
                       aria-label={t("answer", { n: q.n })}
                       className="w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-80"
@@ -220,7 +248,7 @@ export function MockExam() {
                   {marked && (
                     <div className="rounded-[10px] bg-surface-2 p-3 text-sm">
                       <p className="font-semibold">{t("awarded", { got: r?.awarded ?? 0, of: q.marks })}</p>
-                      {r?.feedback && q.type !== "mcq" && <p className="mt-1" dir="auto">{r.feedback}</p>}
+                      {r?.feedback && !auto(q.type) && <p className="mt-1" dir="auto">{r.feedback}</p>}
                       <p className="mt-2 whitespace-pre-line text-muted" dir="auto">
                         <span className="font-medium text-text">{t("markscheme")} </span>
                         {q.markscheme}
@@ -264,7 +292,7 @@ export function MockExam() {
         </Field>
         <Field label={t("length")} htmlFor="ex-min">
           <Select id="ex-min" value={minutes} onChange={(e) => setMinutes(Number(e.target.value))}>
-            {[15, 30, 45, 60].map((m) => (
+            {[15, 30, 45, 60, 90, 120].map((m) => (
               <option key={m} value={m}>
                 {t("minutes", { m })}
               </option>
@@ -272,6 +300,40 @@ export function MockExam() {
           </Select>
         </Field>
       </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label={t("difficulty")} htmlFor="ex-diff">
+          <Select id="ex-diff" value={difficulty} onChange={(e) => setDifficulty(e.target.value as "easy" | "medium" | "hard")}>
+            <option value="easy">{t("easy")}</option>
+            <option value="medium">{t("medium")}</option>
+            <option value="hard">{t("hard")}</option>
+          </Select>
+        </Field>
+        <fieldset className="flex flex-col gap-1">
+          <legend className="mb-1 text-sm font-medium">{t("types")}</legend>
+          <div className="flex flex-wrap gap-2">
+            {(["mcq", "truefalse", "fill", "short", "long", "essay"] as const).map((ty) => {
+              const on = types.includes(ty);
+              return (
+                <button key={ty} type="button" aria-pressed={on} onClick={() => setTypes((p) => (on ? p.filter((x) => x !== ty) : [...p, ty]))} className={cn("rounded-full border px-3 py-1 text-sm", on ? "border-primary bg-primary-soft text-primary" : "border-border")}>
+                  {t(`type.${ty}`)}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      </div>
+      <Field label={t("topic")} htmlFor="ex-topic">
+        <textarea
+          id="ex-topic"
+          value={topic}
+          onChange={(e) => setTopic(e.target.value)}
+          rows={2}
+          maxLength={600}
+          dir="auto"
+          placeholder={t("topicPlaceholder")}
+          className="w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        />
+      </Field>
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-sm font-medium">{t("units")}</legend>
         <div className="flex flex-wrap gap-2">

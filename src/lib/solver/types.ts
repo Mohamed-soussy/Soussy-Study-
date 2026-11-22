@@ -7,6 +7,8 @@ export interface Solution {
   known: { quantity: string; value: string; unit: string }[];
   unknown: string;
   idea: string;
+  /** Every formula used, with what each symbol means (older saved solutions may not have it). */
+  formulas?: { name: string; latex: string; meaning: string }[];
   steps: { math: string; text: string; why: string }[];
   answer: { latex: string; plain: string };
   check: string;
