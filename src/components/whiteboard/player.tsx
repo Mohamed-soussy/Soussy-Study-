@@ -1,10 +1,11 @@
 "use client";
 
-import Konva from "konva";
+import type Konva from "konva";
 import { Pause, Play, RotateCcw, SkipBack, SkipForward, Volume2, VolumeX } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Arrow, Circle, Layer, Line, Rect, Stage, Text } from "react-konva";
+import { Caveat } from "next/font/google";
+import { Layer, Line, Rect, Stage, Text } from "react-konva";
 import { Button } from "@/components/ui/button";
 import { BOARD_H, BOARD_W, words, type BoardAction, type BoardColor, type Lesson } from "@/lib/whiteboard/types";
 import { cn } from "@/lib/utils";
@@ -77,87 +78,215 @@ function bbox(a: BoardAction): { x: number; y: number; w: number; h: number } {
   }
 }
 
-/** One shape, with a quick draw-in animation (≤ 0.25 s) the first time it appears. */
-function Shape({ a, p, onPick, selected }: { a: BoardAction; p: Palette; onPick: () => void; selected: boolean }) {
-  const ref = useRef<Konva.Shape | null>(null);
+/* ---------- hand-drawn look: wobbly strokes drawn like a pen, handwriting text ---------- */
+
+const hand = Caveat({ subsets: ["latin"], weight: ["600", "700"] });
+
+/** Tiny deterministic random numbers, so a shape wobbles the same way every time. */
+function rng(seed: number) {
+  let x = Math.abs(Math.floor(seed * 9301 + 49297)) % 233280 || 1;
+  return () => {
+    x = (x * 9301 + 49297) % 233280;
+    return x / 233280;
+  };
+}
+
+/** A straight pen stroke from A to B with a slight natural wobble. */
+function wobbly(x1: number, y1: number, x2: number, y2: number, r: () => number): number[] {
+  const len = Math.hypot(x2 - x1, y2 - y1);
+  const n = Math.max(2, Math.round(len / 18));
+  const nx = -(y2 - y1) / (len || 1);
+  const ny = (x2 - x1) / (len || 1);
+  const bow = (r() - 0.5) * Math.min(6, len * 0.03);
+  const out: number[] = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    const j = (r() - 0.5) * 1.4 + Math.sin(t * Math.PI) * bow;
+    out.push(x1 + (x2 - x1) * t + nx * j, y1 + (y2 - y1) * t + ny * j);
+  }
+  return out;
+}
+
+/** The strokes a teacher would draw for this shape, in order. */
+function strokes(a: BoardAction): number[][] {
+  const r = rng(a.x * 7 + a.y * 13 + (a.w ?? 0) + (a.r ?? 0));
+  const o = () => (r() - 0.5) * 6; // ends overshoot a little, like a real pen
+  switch (a.kind) {
+    case "line":
+      return [wobbly(a.x, a.y, a.x2 ?? a.x, a.y2 ?? a.y, r)];
+    case "arrow": {
+      const x2 = a.x2 ?? a.x;
+      const y2 = a.y2 ?? a.y;
+      const ang = Math.atan2(y2 - a.y, x2 - a.x);
+      const h = 16;
+      return [
+        wobbly(a.x, a.y, x2, y2, r),
+        wobbly(x2, y2, x2 - h * Math.cos(ang - 0.45), y2 - h * Math.sin(ang - 0.45), r),
+        wobbly(x2, y2, x2 - h * Math.cos(ang + 0.45), y2 - h * Math.sin(ang + 0.45), r),
+      ];
+    }
+    case "rect": {
+      const w = a.w ?? 120;
+      const h = a.h ?? 80;
+      return [
+        wobbly(a.x + o(), a.y, a.x + w + o(), a.y, r),
+        wobbly(a.x + w, a.y + o(), a.x + w, a.y + h + o(), r),
+        wobbly(a.x + w + o(), a.y + h, a.x + o(), a.y + h, r),
+        wobbly(a.x, a.y + h + o(), a.x, a.y + o(), r),
+      ];
+    }
+    case "circle": {
+      const rad = a.r ?? 40;
+      const start = r() * Math.PI * 2;
+      const turns = 1.06 + r() * 0.06;
+      const n = Math.max(24, Math.round(rad / 3));
+      const pts: number[] = [];
+      for (let i = 0; i <= n * turns; i++) {
+        const t = start + (i / n) * Math.PI * 2;
+        const rr = rad * (1 + (r() - 0.5) * 0.04 + (i / n) * 0.03);
+        pts.push(a.x + Math.cos(t) * rr, a.y + Math.sin(t) * rr);
+      }
+      return [pts];
+    }
+    case "curve":
+      return [a.points ?? [a.x, a.y]];
+    case "highlight": {
+      // A marker scribble back and forth across the area.
+      const w = a.w ?? 160;
+      const h = a.h ?? 50;
+      const rows = Math.max(2, Math.round(h / 14));
+      const pts: number[] = [];
+      for (let i = 0; i <= rows; i++) {
+        const y = a.y + (i / rows) * h;
+        pts.push(i % 2 ? a.x + w : a.x, y + (r() - 0.5) * 3);
+      }
+      return [pts];
+    }
+    default:
+      return [];
+  }
+}
+
+const lengthOf = (pts: number[]) => {
+  let l = 0;
+  for (let i = 2; i < pts.length; i += 2) l += Math.hypot(pts[i] - pts[i - 2], pts[i + 1] - pts[i - 1]);
+  return l;
+};
+
+/** The first `len` units of a polyline, and where the pen tip is. */
+function partial(pts: number[], len: number): { pts: number[]; tip: [number, number] } {
+  const out = [pts[0], pts[1]];
+  let left = len;
+  for (let i = 2; i < pts.length; i += 2) {
+    const seg = Math.hypot(pts[i] - pts[i - 2], pts[i + 1] - pts[i - 1]);
+    if (seg >= left) {
+      const t = seg ? left / seg : 1;
+      const x = pts[i - 2] + (pts[i] - pts[i - 2]) * t;
+      const y = pts[i - 1] + (pts[i + 1] - pts[i - 1]) * t;
+      out.push(x, y);
+      return { pts: out, tip: [x, y] };
+    }
+    out.push(pts[i], pts[i + 1]);
+    left -= seg;
+  }
+  return { pts: out, tip: [pts[pts.length - 2], pts[pts.length - 1]] };
+}
+
+/** One shape, drawn live like a pen on a whiteboard the first time it appears. */
+function Shape({ a, p, onPick, selected, onTip }: { a: BoardAction; p: Palette; onPick: () => void; selected: boolean; onTip?: (tip: [number, number] | null) => void }) {
   const color = p.colors[a.color ?? "ink"];
-  const sw = a.kind === "highlight" ? 0 : selected ? 5 : 3;
+  const sw = a.kind === "highlight" ? 14 : selected ? 5 : 3.2;
+  const paths = useMemo(() => strokes(a), [a]);
+  const total = useMemo(() => paths.reduce((n, s) => n + lengthOf(s), 0), [paths]);
+  const chars = (a.text ?? "").length;
+  // Pen speed: ~700 board units a second; handwriting ~28 letters a second.
+  const duration = a.kind === "text" ? Math.min(2600, 250 + chars * 36) : Math.min(1800, Math.max(350, (total / 700) * 1000));
+  const [progress, setProgress] = useState(() => (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 1 : 0));
 
   useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) return;
-    let tween: Konva.Tween;
-    if (a.kind === "line" || a.kind === "arrow") {
-      const full = [a.x, a.y, a.x2 ?? a.x, a.y2 ?? a.y];
-      (node as Konva.Line).points([a.x, a.y, a.x, a.y]);
-      tween = new Konva.Tween({ node, duration: 0.25, points: full, easing: Konva.Easings.EaseOut });
-    } else if (a.kind === "curve") {
-      const line = node as Konva.Line;
-      const len = Math.max(50, Math.hypot(bbox(a).w, bbox(a).h) * 1.6);
-      line.dash([len, len]);
-      line.dashOffset(len);
-      tween = new Konva.Tween({
-        node,
-        duration: 0.25,
-        dashOffset: 0,
-        onFinish: () => line.dash(a.dashed ? [10, 8] : []),
-      });
-    } else if (a.kind === "highlight") {
-      node.opacity(0);
-      tween = new Konva.Tween({ node, duration: 0.25, opacity: 0.28 });
-    } else {
-      node.opacity(0);
-      node.scale({ x: 0.85, y: 0.85 });
-      tween = new Konva.Tween({ node, duration: 0.22, opacity: 1, scaleX: 1, scaleY: 1, easing: Konva.Easings.EaseOut });
-    }
-    tween.play();
-    return () => tween.destroy();
+    if (progress >= 1) return;
+    let raf = 0;
+    const t0 = performance.now();
+    const tick = (now: number) => {
+      const k = Math.min(1, (now - t0) / duration);
+      setProgress(k);
+      if (k < 1) raf = requestAnimationFrame(tick);
+      else onTip?.(null);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+      onTip?.(null);
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const common = {
-    ref: (n: Konva.Shape | null) => {
-      ref.current = n;
-    },
-    onClick: onPick,
-    onTap: onPick,
-    hitStrokeWidth: 18,
-    shadowColor: selected ? p.colors.danger : undefined,
-    shadowBlur: selected ? 12 : 0,
-    shadowOpacity: selected ? 0.9 : 0,
-  };
-  const dash = a.dashed && a.kind !== "curve" ? [10, 8] : undefined;
+  const tipRef = useRef<[number, number] | null>(null);
+  useEffect(() => {
+    if (progress < 1 && tipRef.current) onTip?.(tipRef.current);
+  }, [progress]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  switch (a.kind) {
-    case "text":
-      return (
-        <Text
-          {...common}
-          x={a.x}
-          y={a.y}
-          text={a.text ?? ""}
-          fontSize={FONT_SIZE[a.size ?? "medium"]}
-          fontStyle={a.size === "large" ? "bold" : "normal"}
-          fontFamily={p.font}
-          fill={color}
-          width={Math.min(BOARD_W - a.x - 20, 640)}
-          wrap="word"
-        />
-      );
-    case "line":
-      return <Line {...common} points={[a.x, a.y, a.x2 ?? a.x, a.y2 ?? a.y]} stroke={color} strokeWidth={sw} lineCap="round" dash={dash} />;
-    case "arrow":
-      return <Arrow {...common} points={[a.x, a.y, a.x2 ?? a.x, a.y2 ?? a.y]} stroke={color} fill={color} strokeWidth={sw} pointerLength={14} pointerWidth={12} dash={dash} />;
-    case "rect":
-      return <Rect {...common} x={a.x} y={a.y} width={a.w ?? 120} height={a.h ?? 80} stroke={color} strokeWidth={sw} cornerRadius={6} dash={dash} />;
-    case "circle":
-      return <Circle {...common} x={a.x} y={a.y} radius={a.r ?? 40} stroke={color} strokeWidth={sw} dash={dash} />;
-    case "curve":
-      return <Line {...common} points={a.points ?? [a.x, a.y]} stroke={color} strokeWidth={sw} tension={0.4} lineCap="round" lineJoin="round" />;
-    case "highlight":
-      return <Rect {...common} x={a.x} y={a.y} width={a.w ?? 160} height={a.h ?? 50} fill={p.colors.warning} opacity={0.28} cornerRadius={8} />;
+  const pick = { onClick: onPick, onTap: onPick };
+  const glow = { shadowColor: selected ? p.colors.danger : undefined, shadowBlur: selected ? 12 : 0, shadowOpacity: selected ? 0.9 : 0 };
+
+  if (a.kind === "text") {
+    const fs = FONT_SIZE[a.size ?? "medium"] * 1.25;
+    const shown = (a.text ?? "").slice(0, Math.ceil(chars * progress));
+    const arabic = /[\u0600-\u06FF]/.test(a.text ?? "");
+    tipRef.current = [a.x + Math.min(BOARD_W - a.x - 20, shown.length * fs * 0.42), a.y + fs * 0.6];
+    return (
+      <Text
+        {...pick}
+        {...glow}
+        x={a.x}
+        y={a.y}
+        text={shown}
+        fontSize={fs}
+        fontStyle={a.size === "large" ? "bold" : "normal"}
+        fontFamily={arabic ? p.font : `${hand.style.fontFamily}, ${p.font}`}
+        fill={color}
+        width={Math.min(BOARD_W - a.x - 20, 640)}
+        wrap="word"
+        hitStrokeWidth={18}
+      />
+    );
   }
+
+  // Draw the strokes one after another up to the current progress.
+  let left = total * progress;
+  const drawn: number[][] = [];
+  let tip: [number, number] | null = null;
+  for (const s of paths) {
+    if (left <= 0) break;
+    const l = lengthOf(s);
+    if (left >= l) drawn.push(s);
+    else {
+      const part = partial(s, left);
+      drawn.push(part.pts);
+      tip = part.tip;
+    }
+    left -= l;
+  }
+  tipRef.current = tip;
+  return (
+    <>
+      {drawn.map((pts, i) => (
+        <Line
+          key={i}
+          {...pick}
+          {...glow}
+          points={pts}
+          stroke={a.kind === "highlight" ? p.colors.warning : color}
+          opacity={a.kind === "highlight" ? 0.3 : 1}
+          strokeWidth={sw}
+          lineCap="round"
+          lineJoin="round"
+          tension={a.kind === "curve" ? 0.4 : 0}
+          dash={a.dashed ? [10, 8] : undefined}
+          hitStrokeWidth={18}
+        />
+      ))}
+    </>
+  );
 }
 
 export interface PlayerHandle {
@@ -197,6 +326,16 @@ export function WhiteboardPlayer({
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [lasso, setLasso] = useState<number[] | null>(null);
   const [voiceBlocked, setVoiceBlocked] = useState(false);
+  /** The voice has worked at least once on this page (so slow starts are just slow, not blocked). */
+  const speechWorked = useRef(false);
+  /** The caption timer is leading because the voice hadn't started yet. */
+  const voiceTimer = useRef(false);
+  // Where the pen is right now (shown as ✏️ while a shape is being drawn).
+  const [pen, setPen] = useState<[number, number] | null>(null);
+  const [, setFontReady] = useState(false);
+  useEffect(() => {
+    document.fonts?.load(`700 30px ${hand.style.fontFamily}`).then(() => setFontReady(true)).catch(() => {});
+  }, []);
   // Natural device voices the student can choose from (remembered per language).
   const vlang = lesson.language === "ar" ? "ar" : "en";
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
@@ -274,7 +413,10 @@ export function WhiteboardPlayer({
         while (k + 1 < starts.length && starts[k + 1] <= charIndex) k++;
         return k;
       };
+      let advanced = false;
       const next = () => {
+        if (advanced) return; // the voice ending and the caption timer can both arrive
+        advanced = true;
         reach(i, list.length);
         if (playingRef.current) timers.current.push(window.setTimeout(() => playSegment(i + 1), 450));
       };
@@ -307,7 +449,11 @@ export function WhiteboardPlayer({
       };
       u.onboundary = boundary;
       u.onstart = () => {
+        // The voice started (maybe late): let it lead again and drop the caption timer.
+        if (!started && voiceTimer.current) clearTimers();
         started = true;
+        voiceTimer.current = false;
+        speechWorked.current = true;
         // Some voices never send word boundaries; estimate if none arrive quickly.
         timers.current.push(window.setTimeout(() => !gotBoundary && estimate(1), 600));
       };
@@ -317,18 +463,27 @@ export function WhiteboardPlayer({
         estimate(0);
         timers.current.push(window.setTimeout(next, list.length * msPerWord));
       };
-      synth.resume(); // Chrome can get stuck "paused"
-      synth.speak(u);
-      // Watchdog: some browsers silently block speech that didn't start from a tap. If the voice
-      // hasn't started in 1.5 s, carry on with captions so the drawing never stops.
+      // Chrome drops a speak() that comes right after cancel(), and can get stuck "paused": wait a beat.
       timers.current.push(
         window.setTimeout(() => {
-          if (started) return;
-          synth.cancel();
-          setVoiceBlocked(true);
-          estimate(0);
-          timers.current.push(window.setTimeout(next, list.length * msPerWord + 300));
-        }, 1500),
+          synth.resume();
+          synth.speak(u);
+        }, 80),
+      );
+      // Watchdog: if the voice hasn't started after a few seconds (blocked by the browser),
+      // keep drawing with captions. We never cancel the voice: natural online voices can be slow
+      // to start, and if it starts late it simply takes over again.
+      timers.current.push(
+        window.setTimeout(
+          () => {
+            if (started) return;
+            voiceTimer.current = true;
+            if (!speechWorked.current) setVoiceBlocked(true);
+            estimate(0);
+            timers.current.push(window.setTimeout(next, list.length * msPerWord + 300));
+          },
+          speechWorked.current ? 6000 : 3500,
+        ),
       );
     },
     [lesson, muted, rate, reach, stop, onPausedChange, voice],
@@ -481,8 +636,9 @@ export function WhiteboardPlayer({
             </Layer>
             <Layer>
               {visible.map(({ key, a }) => (
-                <Shape key={key} a={a} p={palette} selected={selectedKey === key && !!picked} onPick={() => pick(key, a)} />
+                <Shape key={key} a={a} p={palette} selected={selectedKey === key && !!picked} onPick={() => pick(key, a)} onTip={setPen} />
               ))}
+              {pen && <Text x={pen[0] - 4} y={pen[1] - 30} text="✏️" fontSize={30} listening={false} />}
               {lasso && <Line points={lasso} stroke={palette.colors.danger} strokeWidth={3} dash={[8, 6]} lineCap="round" tension={0.3} listening={false} />}
             </Layer>
           </Stage>

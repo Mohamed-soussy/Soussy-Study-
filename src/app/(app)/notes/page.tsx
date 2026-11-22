@@ -41,6 +41,7 @@ export default function NotesPage() {
   const [newSubject, setNewSubject] = useState("");
   const [newOther, setNewOther] = useState("");
   const [newName, setNewName] = useState("");
+  const [newKind, setNewKind] = useState<"calc" | "writing" | "general" | null>(null);
   const [aiCheck, setAiCheck] = useState<{ busy: boolean; text?: string }>({ busy: false });
   const [books, setBooks] = useState<Notebook[]>([]);
   const [bookId, setBookId] = useState<string | null>(null);
@@ -57,10 +58,11 @@ export default function NotesPage() {
   useEffect(() => {
     listNotebooks()
       .then((list) => {
-        const l = list.length ? list : [newNotebook()];
-        setBooks(l);
-        setBookId(l[0].id);
-        setTabId(l[0].tabs[0]?.id ?? null);
+        setBooks(list);
+        if (list.length) {
+          setBookId(list[0].id);
+          setTabId(list[0].tabs[0]?.id ?? null);
+        } else setAsking(true); // first visit: ask what the notebook is for
       })
       .catch(() => {});
   }, []);
@@ -108,12 +110,14 @@ export default function NotesPage() {
     const code = newSubject === "__other" ? (newOther.trim() ? `other:${newOther.trim()}` : null) : newSubject || null;
     const nb = newNotebook(newName.trim() || subjectName(code) || t("untitled"));
     nb.subject_code = code;
+    nb.tabs[0].kind = newKind ?? notebookKind(subjectName(code));
     setBooks((all) => [nb, ...all]);
     setBookId(nb.id);
     setTabId(nb.tabs[0].id);
     setAsking(false);
     setNewName("");
     setNewOther("");
+    setNewKind(null);
     setSide("none");
     await saveNotebook(nb);
   };
@@ -145,44 +149,70 @@ export default function NotesPage() {
     if (!book || !confirm(t("deleteBookConfirm", { name: book.title }))) return;
     await deleteNotebook(book.id);
     const rest = books.filter((b) => b.id !== book.id);
-    const l = rest.length ? rest : [newNotebook()];
-    setBooks(l);
-    setBookId(l[0].id);
-    setTabId(l[0].tabs[0]?.id ?? null);
+    setBooks(rest);
+    setBookId(rest[0]?.id ?? null);
+    setTabId(rest[0]?.tabs[0]?.id ?? null);
+    if (!rest.length) setAsking(true);
   };
 
   return (
     <>
       <PageHeader title={t("title")} text={t("textTabs")} />
+      {asking && (
+        <div className="fixed inset-0 z-[70] grid place-items-center bg-black/60 p-4" role="dialog" aria-modal aria-labelledby="nb-q">
+          <Card className="flex w-full max-w-md flex-col gap-4 p-5 shadow-2xl">
+            <h2 id="nb-q" className="text-lg font-bold">{t("whichSubject")}</h2>
+            <Field label={t("subject")} htmlFor="nb-subject">
+              <Select id="nb-subject" value={newSubject} onChange={(e) => { setNewSubject(e.target.value); setNewKind(null); }}>
+                <option value="">{t("noSubject")}</option>
+                {profile.enrollments.map((e) => (
+                  <option key={e.subjectId} value={e.subjectId}>{e.name}</option>
+                ))}
+                <option value="__other">{t("otherSubject")}</option>
+              </Select>
+            </Field>
+            {newSubject === "__other" && <Input value={newOther} onChange={(e) => setNewOther(e.target.value)} placeholder={t("otherPlaceholder")} aria-label={t("otherSubject")} dir="auto" />}
+            <fieldset className="flex flex-col gap-2">
+              <legend className="mb-1 text-sm font-medium">{t("tabKindQuestion")}</legend>
+              {(["calc", "writing", "general"] as const).map((k) => {
+                const suggested = notebookKind(newSubject === "__other" ? newOther : profile.enrollments.find((e) => e.subjectId === newSubject)?.name);
+                const on = (newKind ?? suggested) === k;
+                return (
+                  <button key={k} type="button" onClick={() => setNewKind(k)} aria-pressed={on} className={cn("rounded-[10px] border px-3 py-2 text-start text-sm", on ? "border-primary bg-primary-soft font-semibold text-primary" : "border-border")}>
+                    {k === "calc" ? "🧮 " : k === "writing" ? "✍️ " : "📝 "}
+                    {t(k === "calc" ? "kindCalc" : k === "writing" ? "kindWriting" : "kindGeneral")}
+                  </button>
+                );
+              })}
+            </fieldset>
+            <Field label={t("bookName")} htmlFor="nb-name">
+              <Input id="nb-name" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={t("bookNamePlaceholder")} dir="auto" />
+            </Field>
+            <div className="flex gap-2">
+              <Button onClick={addBook}>{t("create")}</Button>
+              {books.length > 0 && <Button variant="ghost" onClick={() => setAsking(false)}>{t("cancel")}</Button>}
+            </div>
+          </Card>
+        </div>
+      )}
+      {askTab && (
+        <div className="fixed inset-0 z-[70] grid place-items-center bg-black/60 p-4" role="dialog" aria-modal aria-labelledby="tab-q">
+          <Card className="flex w-full max-w-md flex-col gap-3 p-5 shadow-2xl">
+            <h2 id="tab-q" className="text-lg font-bold">{t("tabKindQuestion")}</h2>
+            <Button size="lg" variant="outline" onClick={() => addTab("calc")}>🧮 {t("kindCalc")}</Button>
+            <Button size="lg" variant="outline" onClick={() => addTab("writing")}>✍️ {t("kindWriting")}</Button>
+            <Button size="lg" variant="outline" onClick={() => addTab("general")}>📝 {t("kindGeneral")}</Button>
+            <Button variant="ghost" onClick={() => setAskTab(false)}>{t("cancel")}</Button>
+          </Card>
+        </div>
+      )}
+
       <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
         {/* Notebooks */}
         <aside className="flex min-w-0 flex-col gap-2">
           <Button size="sm" onClick={() => setAsking(true)}>
             <Plus aria-hidden /> {t("newBook")}
           </Button>
-          {asking && (
-            <Card className="flex flex-col gap-3 p-3">
-              <p className="text-sm font-semibold">{t("whichSubject")}</p>
-              <Field label={t("subject")} htmlFor="nb-subject">
-                <Select id="nb-subject" value={newSubject} onChange={(e) => setNewSubject(e.target.value)}>
-                  <option value="">{t("noSubject")}</option>
-                  {profile.enrollments.map((e) => (
-                    <option key={e.subjectId} value={e.subjectId}>{e.name}</option>
-                  ))}
-                  <option value="__other">{t("otherSubject")}</option>
-                </Select>
-              </Field>
-              {newSubject === "__other" && <Input value={newOther} onChange={(e) => setNewOther(e.target.value)} placeholder={t("otherPlaceholder")} aria-label={t("otherSubject")} dir="auto" />}
-              <Field label={t("bookName")} htmlFor="nb-name">
-                <Input id="nb-name" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={t("bookNamePlaceholder")} dir="auto" />
-              </Field>
-              <p className="text-xs text-muted">{t("toolsHint")}</p>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={addBook}>{t("create")}</Button>
-                <Button size="sm" variant="ghost" onClick={() => setAsking(false)}>{t("cancel")}</Button>
-              </div>
-            </Card>
-          )}
           <ul className="flex gap-1 overflow-x-auto lg:flex-col">
             {books.map((b) => (
               <li key={b.id} className="shrink-0">
@@ -236,18 +266,8 @@ export default function NotesPage() {
                   )}
                 </div>
               ))}
-              <Button size="sm" variant="ghost" onClick={() => setAskTab((v) => !v)} className="shrink-0" aria-expanded={askTab}><Plus aria-hidden /> {t("addTab")}</Button>
+              <Button size="sm" variant="ghost" onClick={() => setAskTab(true)} className="shrink-0" aria-expanded={askTab}><Plus aria-hidden /> {t("addTab")}</Button>
             </div>
-            {askTab && (
-              <Card className="flex flex-col gap-3 p-3">
-                <p className="text-sm font-semibold">{t("tabKindQuestion")}</p>
-                <div className="grid gap-2 sm:grid-cols-3">
-                  <Button variant="outline" onClick={() => addTab("calc")}>🧮 {t("kindCalc")}</Button>
-                  <Button variant="outline" onClick={() => addTab("writing")}>✍️ {t("kindWriting")}</Button>
-                  <Button variant="ghost" onClick={() => addTab("general")}>📝 {t("kindGeneral")}</Button>
-                </div>
-              </Card>
-            )}
 
             {/* Toolbar */}
             <div className="flex flex-wrap items-center gap-2">
