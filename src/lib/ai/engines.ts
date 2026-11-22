@@ -68,7 +68,7 @@ function assertPrivacy(engine: Engine, data: DataClass) {
 export class EngineError extends Error {
   constructor(
     public engine: Engine,
-    public code: "not_configured" | "rate_limited" | "busy" | "no_credits" | "bad_request" | "timeout" | "failed",
+    public code: "not_configured" | "bad_key" | "rate_limited" | "busy" | "no_credits" | "bad_request" | "timeout" | "failed",
     message: string,
     /** Seconds the provider asked us to wait (rate limits). */
     public retryAfter = 0,
@@ -86,6 +86,7 @@ export function engineConfigured(engine: Engine): boolean {
 }
 
 function classify(engine: Engine, status: number, body: string, retryAfter = 0): EngineError {
+  if (status === 401 || status === 403) return new EngineError(engine, "bad_key", "The API key was rejected.");
   if (status === 429) return new EngineError(engine, "rate_limited", "Too many requests right now.", retryAfter);
   // Groq occasionally rejects its own output against a strict schema: worth another try.
   if (/does not match the expected schema|failed_generation|json_validate_failed/i.test(body)) return new EngineError(engine, "busy", "The model's answer was malformed.");
@@ -223,7 +224,7 @@ const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const MISTRAL_URL = "https://api.mistral.ai/v1/chat/completions";
 const MISTRAL_CHAT = ["mistral-medium-latest", "mistral-small-latest"] as const;
 const MISTRAL_AUDIO = ["voxtral-mini-latest"] as const;
-const OVERFLOW_CODES = ["rate_limited", "busy", "timeout", "no_credits", "not_configured"];
+const OVERFLOW_CODES = ["rate_limited", "busy", "timeout", "no_credits", "not_configured", "bad_key", "failed"];
 
 /**
  * Runs on Groq first; if Groq isn't set up, is rate limited, busy or out of credits,
@@ -474,6 +475,8 @@ export function engineErrorMessage(err: unknown): string {
     switch (err.code) {
       case "not_configured":
         return "The AI isn't connected yet.";
+      case "bad_key":
+        return "The AI key on the server is wrong. Ask the site owner to check it.";
       case "rate_limited":
         return "The AI is busy right now. Try again in a minute.";
       case "busy":
