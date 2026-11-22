@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   openGraph: { type: "website", siteName: "Soussy Study", title: "Soussy Study", description: "Study your way, with an AI that knows your curriculum.", url: "/" },
   // Google Search Console verification (set NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION in Vercel).
-  verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } : undefined,
+  verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "dZgFmKI9chsccXeHrICSTdZIulOeM_BOHvYqRdiUowE" },
   appleWebApp: { capable: true, title: "Soussy Study", statusBarStyle: "default" },
 };
 
